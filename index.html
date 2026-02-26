@@ -1,0 +1,2531 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="theme-color" content="#1a1a2e">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Pavan">
+<meta name="application-name" content="Pavan's Planner">
+<meta name="description" content="Pavan's personal daily diet & task scheduler">
+<title>Pavan's Daily Scheduler</title>
+<!-- PWA Manifest (inline as data URI so single-file works) -->
+<link rel="manifest" href="data:application/manifest+json,{
+  %22name%22:%22Pavan's Daily Planner%22,
+  %22short_name%22:%22Pavan%22,
+  %22description%22:%22Daily diet and task scheduler%22,
+  %22start_url%22:%22.%22,
+  %22display%22:%22standalone%22,
+  %22background_color%22:%22%230f0f1a%22,
+  %22theme_color%22:%22%231a1a2e%22,
+  %22orientation%22:%22portrait%22,
+  %22icons%22:[
+    {%22src%22:%22data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'%3E%3Crect width='512' height='512' rx='100' fill='%231a1a2e'/%3E%3Ctext y='340' x='80' font-size='320'%3E🌿%3C/text%3E%3C/svg%3E%22,
+    %22sizes%22:%22512x512%22,
+    %22type%22:%22image/svg+xml%22,
+    %22purpose%22:%22any maskable%22}
+  ]
+}">
+<!-- iOS home screen icon fallback -->
+<link rel="apple-touch-icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'><rect width='512' height='512' rx='100' fill='%231a1a2e'/><text y='340' x='80' font-size='320'>🌿</text></svg>">
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0f0f1a;
+    --surface: #1a1a2e;
+    --card: #16213e;
+    --accent: #f4a261;
+    --accent2: #52b788;
+    --accent3: #e76f51;
+    --text: #e8e8f0;
+    --muted: #8888aa;
+    --border: rgba(255,255,255,0.08);
+    --glow: rgba(244,162,97,0.15);
+    --active-glow: rgba(82,183,136,0.2);
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'DM Sans', sans-serif;
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* Ambient background */
+  body::before {
+    content: '';
+    position: fixed;
+    top: -50%;
+    left: -50%;
+    width: 200%;
+    height: 200%;
+    background: 
+      radial-gradient(ellipse at 20% 20%, rgba(244,162,97,0.06) 0%, transparent 50%),
+      radial-gradient(ellipse at 80% 80%, rgba(82,183,136,0.06) 0%, transparent 50%);
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  .app {
+    position: relative;
+    z-index: 1;
+    max-width: 480px;
+    margin: 0 auto;
+    padding-bottom: 100px;
+  }
+
+  /* Header */
+  .header {
+    padding: 20px 20px 16px;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    background: rgba(15,15,26,0.85);
+    backdrop-filter: blur(20px);
+    border-bottom: 1px solid var(--border);
+  }
+
+  .header-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 14px;
+  }
+
+  .app-title {
+    font-family: 'Syne', sans-serif;
+    font-size: 22px;
+    font-weight: 800;
+    background: linear-gradient(135deg, var(--accent), var(--accent2));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    letter-spacing: -0.5px;
+  }
+
+  .live-time {
+    font-family: 'Syne', sans-serif;
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--accent);
+    background: rgba(244,162,97,0.1);
+    padding: 6px 12px;
+    border-radius: 20px;
+    border: 1px solid rgba(244,162,97,0.25);
+  }
+
+  /* Day Tabs */
+  .day-tabs {
+    display: flex;
+    gap: 6px;
+    overflow-x: auto;
+    scrollbar-width: none;
+    padding-bottom: 2px;
+  }
+  .day-tabs::-webkit-scrollbar { display: none; }
+
+  .day-tab {
+    flex-shrink: 0;
+    padding: 7px 14px;
+    border-radius: 20px;
+    font-family: 'Syne', sans-serif;
+    font-size: 12px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.25s ease;
+    border: 1.5px solid transparent;
+    background: var(--surface);
+    color: var(--muted);
+    letter-spacing: 0.3px;
+  }
+
+  .day-tab.active {
+    background: linear-gradient(135deg, rgba(244,162,97,0.2), rgba(82,183,136,0.2));
+    border-color: var(--accent);
+    color: var(--accent);
+  }
+
+  .day-tab.today-marker {
+    position: relative;
+  }
+  .day-tab.today-marker::after {
+    content: '';
+    position: absolute;
+    bottom: -6px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 4px;
+    height: 4px;
+    border-radius: 50%;
+    background: var(--accent2);
+  }
+
+  /* Progress bar */
+  .day-progress {
+    margin: 12px 20px 0;
+    height: 3px;
+    background: rgba(255,255,255,0.06);
+    border-radius: 10px;
+    overflow: hidden;
+  }
+  .day-progress-bar {
+    height: 100%;
+    background: linear-gradient(90deg, var(--accent), var(--accent2));
+    border-radius: 10px;
+    transition: width 1s ease;
+  }
+
+  /* Notification banner */
+  .notif-banner {
+    margin: 14px 20px 0;
+    padding: 10px 14px;
+    border-radius: 12px;
+    background: rgba(82,183,136,0.1);
+    border: 1px solid rgba(82,183,136,0.25);
+    font-size: 12px;
+    color: var(--accent2);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    cursor: pointer;
+    transition: background 0.2s;
+  }
+  .notif-banner:hover { background: rgba(82,183,136,0.18); }
+  .notif-banner.denied {
+    background: rgba(231,111,81,0.1);
+    border-color: rgba(231,111,81,0.25);
+    color: var(--accent3);
+  }
+
+  /* Current task highlight */
+  .current-task-card {
+    margin: 16px 20px 8px;
+    padding: 16px;
+    border-radius: 18px;
+    background: linear-gradient(135deg, rgba(82,183,136,0.15), rgba(244,162,97,0.1));
+    border: 1px solid rgba(82,183,136,0.3);
+    position: relative;
+    overflow: hidden;
+  }
+
+  .current-task-card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background: linear-gradient(135deg, rgba(82,183,136,0.05), transparent);
+    pointer-events: none;
+  }
+
+  .current-label {
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 1.5px;
+    color: var(--accent2);
+    text-transform: uppercase;
+    margin-bottom: 6px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .pulse-dot {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: var(--accent2);
+    animation: pulse 2s infinite;
+  }
+
+  @keyframes pulse {
+    0%, 100% { opacity: 1; transform: scale(1); }
+    50% { opacity: 0.5; transform: scale(1.3); }
+  }
+
+  .current-task-name {
+    font-family: 'Syne', sans-serif;
+    font-size: 18px;
+    font-weight: 700;
+    color: var(--text);
+    margin-bottom: 4px;
+  }
+
+  .current-task-time {
+    font-size: 12px;
+    color: var(--muted);
+  }
+
+  .next-up {
+    font-size: 12px;
+    color: var(--muted);
+    margin-top: 8px;
+    padding-top: 8px;
+    border-top: 1px solid rgba(255,255,255,0.06);
+  }
+
+  .next-up span {
+    color: var(--accent);
+    font-weight: 500;
+  }
+
+  /* Section heading */
+  .section-heading {
+    font-family: 'Syne', sans-serif;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 1.8px;
+    color: var(--muted);
+    text-transform: uppercase;
+    padding: 16px 20px 8px;
+  }
+
+  /* Timeline */
+  .timeline {
+    padding: 0 20px;
+    position: relative;
+  }
+
+  .timeline::before {
+    content: '';
+    position: absolute;
+    left: 44px;
+    top: 0;
+    bottom: 0;
+    width: 1px;
+    background: linear-gradient(to bottom, transparent, var(--border) 10%, var(--border) 90%, transparent);
+  }
+
+  .timeline-item {
+    display: grid;
+    grid-template-columns: 52px 1fr;
+    gap: 0 12px;
+    margin-bottom: 8px;
+    animation: fadeIn 0.3s ease both;
+  }
+
+  @keyframes fadeIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  .time-col {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    padding-top: 12px;
+    position: relative;
+  }
+
+  .time-text {
+    font-family: 'Syne', sans-serif;
+    font-size: 10px;
+    font-weight: 600;
+    color: var(--muted);
+    line-height: 1;
+    text-align: right;
+  }
+
+  .time-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--border);
+    border: 2px solid var(--muted);
+    position: absolute;
+    right: -16px;
+    top: 14px;
+    z-index: 2;
+    transition: all 0.3s ease;
+  }
+
+  .task-card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 11px 14px;
+    transition: all 0.25s ease;
+    cursor: pointer;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .task-card::before {
+    content: '';
+    position: absolute;
+    left: 0; top: 0; bottom: 0;
+    width: 3px;
+    background: var(--border);
+    transition: background 0.3s;
+  }
+
+  .task-card:active {
+    transform: scale(0.98);
+  }
+
+  /* Category colors */
+  .task-card.cat-wake::before { background: #f4d03f; }
+  .task-card.cat-meal::before { background: var(--accent); }
+  .task-card.cat-gym::before { background: var(--accent3); }
+  .task-card.cat-work::before { background: #74b9ff; }
+  .task-card.cat-prep::before { background: var(--accent2); }
+  .task-card.cat-rest::before { background: #a29bfe; }
+  .task-card.cat-household::before { background: #fd79a8; }
+
+  .task-card.active-task {
+    background: rgba(82,183,136,0.08);
+    border-color: rgba(82,183,136,0.35);
+    box-shadow: 0 0 20px rgba(82,183,136,0.1);
+  }
+
+  .task-card.active-task::before { background: var(--accent2); }
+
+  .task-card.done {
+    opacity: 0.45;
+  }
+
+  .task-card.done .task-name {
+    text-decoration: line-through;
+  }
+
+  .task-emoji {
+    font-size: 16px;
+    margin-right: 6px;
+  }
+
+  .task-name {
+    font-family: 'Syne', sans-serif;
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--text);
+    margin-bottom: 3px;
+    display: flex;
+    align-items: center;
+  }
+
+  .task-detail {
+    font-size: 12px;
+    color: var(--muted);
+    line-height: 1.4;
+  }
+
+  .task-badge {
+    display: inline-block;
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.5px;
+    padding: 2px 7px;
+    border-radius: 20px;
+    margin-top: 5px;
+    text-transform: uppercase;
+  }
+
+  .badge-meal { background: rgba(244,162,97,0.15); color: var(--accent); }
+  .badge-gym { background: rgba(231,111,81,0.15); color: var(--accent3); }
+  .badge-work { background: rgba(116,185,255,0.15); color: #74b9ff; }
+  .badge-prep { background: rgba(82,183,136,0.15); color: var(--accent2); }
+
+  .time-dot.active-dot {
+    background: var(--accent2);
+    border-color: var(--accent2);
+    box-shadow: 0 0 0 3px rgba(82,183,136,0.3);
+    width: 10px;
+    height: 10px;
+    right: -17px;
+    top: 13px;
+  }
+
+  /* Completed check */
+  .check-btn {
+    position: absolute;
+    right: 10px;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    border: 2px solid var(--border);
+    background: transparent;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s;
+    color: transparent;
+    font-size: 12px;
+  }
+
+  .check-btn.checked {
+    background: var(--accent2);
+    border-color: var(--accent2);
+    color: white;
+  }
+
+  /* Bottom nav */
+  .bottom-nav {
+    position: fixed;
+    bottom: 0;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 100%;
+    max-width: 480px;
+    background: rgba(15,15,26,0.9);
+    backdrop-filter: blur(20px);
+    border-top: 1px solid var(--border);
+    padding: 10px 20px 20px;
+    display: flex;
+    justify-content: space-around;
+    z-index: 200;
+  }
+
+  .nav-btn {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+    background: none;
+    border: none;
+    cursor: pointer;
+    color: var(--muted);
+    font-family: 'DM Sans', sans-serif;
+    font-size: 10px;
+    font-weight: 500;
+    transition: color 0.2s;
+    padding: 4px 16px;
+    border-radius: 12px;
+  }
+
+  .nav-btn.active {
+    color: var(--accent);
+  }
+
+  .nav-icon { font-size: 20px; }
+
+  /* Stats view */
+  .stats-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+    padding: 0 20px;
+    margin-top: 8px;
+  }
+
+  .stat-card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 16px;
+    text-align: center;
+  }
+
+  .stat-value {
+    font-family: 'Syne', sans-serif;
+    font-size: 28px;
+    font-weight: 800;
+    background: linear-gradient(135deg, var(--accent), var(--accent2));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  .stat-label {
+    font-size: 11px;
+    color: var(--muted);
+    margin-top: 4px;
+  }
+
+  .meal-timeline {
+    padding: 0 20px;
+  }
+
+  .meal-card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 14px;
+    margin-bottom: 10px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .meal-icon {
+    width: 44px;
+    height: 44px;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 22px;
+    flex-shrink: 0;
+  }
+
+  .meal-icon.breakfast { background: rgba(244,162,97,0.15); }
+  .meal-icon.lunch { background: rgba(82,183,136,0.15); }
+  .meal-icon.dinner { background: rgba(116,185,255,0.15); }
+  .meal-icon.snack { background: rgba(231,111,81,0.15); }
+
+  .meal-info { flex: 1; }
+  .meal-title { font-family: 'Syne', sans-serif; font-size: 13px; font-weight: 700; margin-bottom: 3px; }
+  .meal-desc { font-size: 12px; color: var(--muted); }
+  .meal-time { font-size: 11px; color: var(--accent); font-weight: 500; font-family: 'Syne', sans-serif; }
+
+  /* Hidden views */
+  .view { display: none; }
+  .view.active { display: block; }
+
+  /* Gym day chip */
+  .gym-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 4px 10px;
+    border-radius: 20px;
+    font-size: 11px;
+    font-weight: 600;
+    background: rgba(231,111,81,0.15);
+    color: var(--accent3);
+    border: 1px solid rgba(231,111,81,0.25);
+    margin: 0 20px 8px;
+  }
+
+  .toast {
+    position: fixed;
+    bottom: 90px;
+    left: 50%;
+    transform: translateX(-50%) translateY(10px);
+    background: var(--surface);
+    border: 1px solid var(--border);
+    padding: 10px 18px;
+    border-radius: 30px;
+    font-size: 13px;
+    color: var(--text);
+    opacity: 0;
+    transition: all 0.3s ease;
+    z-index: 300;
+    white-space: nowrap;
+  }
+
+  .toast.show {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+  }
+
+  /* ============================================================
+     ALARM MODAL
+  ============================================================ */
+  .alarm-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.75);
+    backdrop-filter: blur(8px);
+    z-index: 1000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+    animation: overlayIn 0.3s ease;
+  }
+
+  @keyframes overlayIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+  }
+
+  .alarm-modal {
+    background: var(--surface);
+    border: 1px solid rgba(244,162,97,0.35);
+    border-radius: 26px;
+    width: 100%;
+    max-width: 400px;
+    overflow: hidden;
+    animation: modalIn 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
+    box-shadow: 0 0 60px rgba(244,162,97,0.2), 0 20px 60px rgba(0,0,0,0.5);
+  }
+
+  @keyframes modalIn {
+    from { opacity: 0; transform: scale(0.85) translateY(30px); }
+    to { opacity: 1; transform: scale(1) translateY(0); }
+  }
+
+  .alarm-header {
+    background: linear-gradient(135deg, rgba(244,162,97,0.2), rgba(231,111,81,0.15));
+    padding: 24px 22px 18px;
+    border-bottom: 1px solid var(--border);
+    position: relative;
+    overflow: hidden;
+  }
+
+  .alarm-header::before {
+    content: '';
+    position: absolute;
+    top: -30px; right: -30px;
+    width: 100px; height: 100px;
+    border-radius: 50%;
+    background: rgba(244,162,97,0.12);
+  }
+
+  .alarm-ring-icon {
+    font-size: 42px;
+    display: block;
+    text-align: center;
+    margin-bottom: 10px;
+    animation: ringShake 0.6s ease infinite;
+  }
+
+  @keyframes ringShake {
+    0%,100% { transform: rotate(-12deg); }
+    50% { transform: rotate(12deg); }
+  }
+
+  .alarm-title {
+    font-family: 'Syne', sans-serif;
+    font-size: 20px;
+    font-weight: 800;
+    text-align: center;
+    color: var(--accent);
+    margin-bottom: 4px;
+  }
+
+  .alarm-subtitle {
+    font-size: 12px;
+    color: var(--muted);
+    text-align: center;
+  }
+
+  .alarm-day-badge {
+    display: inline-block;
+    background: rgba(82,183,136,0.15);
+    border: 1px solid rgba(82,183,136,0.3);
+    color: var(--accent2);
+    font-family: 'Syne', sans-serif;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 1px;
+    padding: 4px 12px;
+    border-radius: 20px;
+    margin: 10px auto 0;
+    display: block;
+    text-align: center;
+    width: fit-content;
+  }
+
+  .alarm-body {
+    padding: 18px 22px;
+    max-height: 55vh;
+    overflow-y: auto;
+  }
+
+  .prep-section {
+    margin-bottom: 16px;
+  }
+
+  .prep-section-title {
+    font-family: 'Syne', sans-serif;
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 8px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .prep-section-title::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: var(--border);
+  }
+
+  .prep-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    padding: 10px 12px;
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    margin-bottom: 7px;
+    position: relative;
+    overflow: hidden;
+    transition: all 0.2s;
+  }
+
+  .prep-item.prep-checked {
+    opacity: 0.5;
+    background: rgba(82,183,136,0.05);
+    border-color: rgba(82,183,136,0.2);
+  }
+
+  .prep-item::before {
+    content: '';
+    position: absolute;
+    left: 0; top: 0; bottom: 0;
+    width: 3px;
+  }
+
+  .prep-item.type-soak::before { background: #74b9ff; }
+  .prep-item.type-breakfast::before { background: var(--accent); }
+  .prep-item.type-gym::before { background: var(--accent3); }
+  .prep-item.type-salad::before { background: var(--accent2); }
+  .prep-item.type-special::before { background: #f6c90e; }
+  .prep-item.type-nuts::before { background: #a29bfe; }
+
+  .prep-emoji { font-size: 20px; flex-shrink: 0; }
+
+  .prep-info { flex: 1; }
+
+  .prep-name {
+    font-family: 'Syne', sans-serif;
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--text);
+    margin-bottom: 2px;
+  }
+
+  .prep-desc { font-size: 11px; color: var(--muted); line-height: 1.4; }
+
+  .prep-check {
+    width: 22px; height: 22px;
+    border-radius: 50%;
+    border: 2px solid var(--border);
+    background: transparent;
+    cursor: pointer;
+    flex-shrink: 0;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 11px; color: transparent;
+    transition: all 0.2s;
+    margin-top: 2px;
+  }
+  .prep-check.done { background: var(--accent2); border-color: var(--accent2); color: white; }
+
+  .alarm-footer {
+    padding: 14px 22px 22px;
+    border-top: 1px solid var(--border);
+    display: flex;
+    gap: 10px;
+  }
+
+  .btn-dismiss {
+    flex: 1;
+    padding: 13px;
+    border-radius: 14px;
+    border: 1.5px solid var(--border);
+    background: transparent;
+    color: var(--muted);
+    font-family: 'Syne', sans-serif;
+    font-size: 13px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  .btn-dismiss:hover { border-color: var(--accent3); color: var(--accent3); }
+
+  .btn-stop-alarm {
+    flex: 2;
+    padding: 13px;
+    border-radius: 14px;
+    border: none;
+    background: linear-gradient(135deg, var(--accent), var(--accent3));
+    color: white;
+    font-family: 'Syne', sans-serif;
+    font-size: 13px;
+    font-weight: 800;
+    cursor: pointer;
+    transition: all 0.2s;
+    box-shadow: 0 4px 20px rgba(244,162,97,0.3);
+  }
+  .btn-stop-alarm:active { transform: scale(0.97); }
+
+  /* Test alarm button in settings area */
+  .test-alarm-btn {
+    margin: 0 20px 10px;
+    padding: 12px 16px;
+    border-radius: 14px;
+    border: 1.5px solid rgba(244,162,97,0.3);
+    background: rgba(244,162,97,0.08);
+    color: var(--accent);
+    font-family: 'Syne', sans-serif;
+    font-size: 13px;
+    font-weight: 700;
+    cursor: pointer;
+    width: calc(100% - 40px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    transition: all 0.2s;
+  }
+  .test-alarm-btn:active { transform: scale(0.98); background: rgba(244,162,97,0.15); }
+
+  .alarm-time-chip {
+    margin: 12px 20px 0;
+    padding: 10px 14px;
+    border-radius: 12px;
+    background: rgba(244,162,97,0.08);
+    border: 1px solid rgba(244,162,97,0.2);
+    font-size: 12px;
+    color: var(--accent);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  /* ============================================================
+     MORNING ALARM MODAL (Suprabhatam)
+  ============================================================ */
+  .morning-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 1100;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+    background: rgba(0,0,0,0.0);
+    animation: morningBg 2s ease forwards;
+  }
+
+  @keyframes morningBg {
+    0%   { background: rgba(0,0,0,0.0); }
+    100% { background: rgba(15,10,0,0.88); backdrop-filter: blur(10px); }
+  }
+
+  .morning-modal {
+    background: linear-gradient(160deg, #1a1200 0%, #0f0f1a 100%);
+    border: 1px solid rgba(255, 200, 60, 0.3);
+    border-radius: 30px;
+    width: 100%;
+    max-width: 400px;
+    overflow: hidden;
+    animation: morningSlide 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
+    box-shadow: 0 0 80px rgba(255,180,0,0.15), 0 30px 80px rgba(0,0,0,0.6);
+  }
+
+  @keyframes morningSlide {
+    from { opacity: 0; transform: scale(0.8) translateY(40px); }
+    to   { opacity: 1; transform: scale(1) translateY(0); }
+  }
+
+  .morning-sky {
+    position: relative;
+    background: linear-gradient(180deg, #0d0d2b 0%, #1a0a00 40%, #ff6b00 80%, #ffb800 100%);
+    padding: 30px 22px 22px;
+    text-align: center;
+    overflow: hidden;
+    min-height: 200px;
+  }
+
+  /* Animated rising sun */
+  .sun-rise {
+    width: 70px;
+    height: 70px;
+    background: radial-gradient(circle, #fff7d6 0%, #ffd700 40%, #ff8c00 80%, transparent 100%);
+    border-radius: 50%;
+    margin: 0 auto 14px;
+    position: relative;
+    animation: sunRise 3s ease forwards, sunPulse 3s ease 3s infinite;
+    box-shadow: 0 0 40px rgba(255,200,0,0.8), 0 0 80px rgba(255,150,0,0.4);
+  }
+
+  @keyframes sunRise {
+    0%   { transform: translateY(60px); opacity: 0; }
+    100% { transform: translateY(0px);  opacity: 1; }
+  }
+
+  @keyframes sunPulse {
+    0%,100% { box-shadow: 0 0 40px rgba(255,200,0,0.8), 0 0 80px rgba(255,150,0,0.4); }
+    50%      { box-shadow: 0 0 60px rgba(255,220,0,1.0), 0 0 120px rgba(255,160,0,0.6); }
+  }
+
+  /* Stars fading */
+  .stars {
+    position: absolute;
+    top: 0; left: 0; right: 0; bottom: 60%;
+    background-image:
+      radial-gradient(1px 1px at 20% 15%, white, transparent),
+      radial-gradient(1px 1px at 60% 25%, white, transparent),
+      radial-gradient(1px 1px at 80% 10%, white, transparent),
+      radial-gradient(1px 1px at 10% 40%, white, transparent),
+      radial-gradient(1px 1px at 50% 8%, white, transparent),
+      radial-gradient(1px 1px at 90% 35%, white, transparent),
+      radial-gradient(1px 1px at 35% 5%, white, transparent);
+    animation: starsFade 4s ease forwards;
+    opacity: 0.8;
+  }
+  @keyframes starsFade { 0%{opacity:0.8} 100%{opacity:0} }
+
+  .morning-title {
+    font-family: 'Syne', sans-serif;
+    font-size: 22px;
+    font-weight: 800;
+    color: #fff8e7;
+    text-shadow: 0 0 20px rgba(255,200,0,0.6);
+    margin-bottom: 5px;
+    letter-spacing: -0.5px;
+  }
+
+  .morning-subtitle {
+    font-size: 13px;
+    color: rgba(255,235,180,0.8);
+    margin-bottom: 6px;
+  }
+
+  .morning-time-badge {
+    display: inline-block;
+    background: rgba(255,200,0,0.15);
+    border: 1px solid rgba(255,200,0,0.35);
+    color: #ffd700;
+    font-family: 'Syne', sans-serif;
+    font-size: 12px;
+    font-weight: 700;
+    padding: 4px 14px;
+    border-radius: 20px;
+    letter-spacing: 0.5px;
+  }
+
+  /* Suprabhatam song visualizer bars */
+  .song-visualizer {
+    display: flex;
+    align-items: flex-end;
+    justify-content: center;
+    gap: 4px;
+    height: 36px;
+    margin: 14px auto 0;
+    width: 160px;
+  }
+
+  .viz-bar {
+    width: 6px;
+    border-radius: 3px;
+    background: linear-gradient(to top, #ff8c00, #ffd700);
+    animation: vizBar 0.8s ease infinite alternate;
+  }
+
+  .viz-bar:nth-child(1)  { height: 30%; animation-delay: 0.0s; }
+  .viz-bar:nth-child(2)  { height: 60%; animation-delay: 0.1s; }
+  .viz-bar:nth-child(3)  { height: 90%; animation-delay: 0.2s; }
+  .viz-bar:nth-child(4)  { height: 70%; animation-delay: 0.3s; }
+  .viz-bar:nth-child(5)  { height: 100%; animation-delay: 0.15s; }
+  .viz-bar:nth-child(6)  { height: 80%; animation-delay: 0.25s; }
+  .viz-bar:nth-child(7)  { height: 50%; animation-delay: 0.05s; }
+  .viz-bar:nth-child(8)  { height: 70%; animation-delay: 0.35s; }
+  .viz-bar:nth-child(9)  { height: 40%; animation-delay: 0.10s; }
+  .viz-bar:nth-child(10) { height: 65%; animation-delay: 0.20s; }
+  .viz-bar:nth-child(11) { height: 85%; animation-delay: 0.30s; }
+  .viz-bar:nth-child(12) { height: 45%; animation-delay: 0.05s; }
+
+  .viz-bar.paused { animation-play-state: paused; height: 15% !important; }
+
+  @keyframes vizBar {
+    0%   { transform: scaleY(0.3); }
+    100% { transform: scaleY(1); }
+  }
+
+  .morning-body {
+    padding: 18px 22px 6px;
+  }
+
+  .morning-first-task {
+    background: rgba(255,200,0,0.06);
+    border: 1px solid rgba(255,200,0,0.18);
+    border-radius: 14px;
+    padding: 12px 14px;
+    margin-bottom: 12px;
+  }
+
+  .morning-first-label {
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 1.5px;
+    color: rgba(255,200,60,0.7);
+    text-transform: uppercase;
+    margin-bottom: 5px;
+  }
+
+  .morning-first-name {
+    font-family: 'Syne', sans-serif;
+    font-size: 15px;
+    font-weight: 700;
+    color: #fff8e7;
+    margin-bottom: 3px;
+  }
+
+  .morning-first-detail {
+    font-size: 12px;
+    color: var(--muted);
+  }
+
+  .volume-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 0 0 14px;
+  }
+  .volume-label {
+    font-size: 12px;
+    color: var(--muted);
+    flex-shrink: 0;
+  }
+  .vol-slider {
+    flex: 1;
+    -webkit-appearance: none;
+    height: 4px;
+    border-radius: 4px;
+    background: rgba(255,200,0,0.2);
+    outline: none;
+  }
+  .vol-slider::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: 18px; height: 18px;
+    border-radius: 50%;
+    background: #ffd700;
+    cursor: pointer;
+    box-shadow: 0 0 8px rgba(255,200,0,0.5);
+  }
+
+  .morning-footer {
+    padding: 0 22px 22px;
+    display: flex;
+    gap: 10px;
+  }
+
+  .btn-morning-snooze {
+    flex: 1;
+    padding: 13px;
+    border-radius: 14px;
+    border: 1.5px solid rgba(255,200,60,0.2);
+    background: transparent;
+    color: rgba(255,235,180,0.7);
+    font-family: 'Syne', sans-serif;
+    font-size: 13px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  .btn-morning-snooze:hover { border-color: rgba(255,200,60,0.5); color: #ffd700; }
+
+  .btn-morning-stop {
+    flex: 2;
+    padding: 13px;
+    border-radius: 14px;
+    border: none;
+    background: linear-gradient(135deg, #ff8c00, #ffd700);
+    color: #1a0a00;
+    font-family: 'Syne', sans-serif;
+    font-size: 13px;
+    font-weight: 800;
+    cursor: pointer;
+    transition: all 0.2s;
+    box-shadow: 0 4px 20px rgba(255,150,0,0.4);
+  }
+  .btn-morning-stop:active { transform: scale(0.97); }
+
+  /* Morning alarm chip */
+  .morning-alarm-chip {
+    margin: 8px 20px 0;
+    padding: 10px 14px;
+    border-radius: 12px;
+    background: rgba(255,200,0,0.07);
+    border: 1px solid rgba(255,200,0,0.18);
+    font-size: 12px;
+    color: #ffd700;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .btn-test-morning {
+    margin: 8px 20px 0;
+    padding: 12px 16px;
+    border-radius: 14px;
+    border: 1.5px solid rgba(255,200,60,0.25);
+    background: rgba(255,200,0,0.06);
+    color: #ffd700;
+    font-family: 'Syne', sans-serif;
+    font-size: 13px;
+    font-weight: 700;
+    cursor: pointer;
+    width: calc(100% - 40px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    transition: all 0.2s;
+  }
+  .btn-test-morning:active { transform: scale(0.98); background: rgba(255,200,0,0.12); }
+
+  /* ARM ALARM banner */
+  .arm-banner {
+    margin: 10px 20px 0;
+    padding: 14px 16px;
+    border-radius: 16px;
+    background: linear-gradient(135deg, rgba(255,200,0,0.15), rgba(255,120,0,0.1));
+    border: 1.5px solid rgba(255,200,0,0.4);
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    cursor: pointer;
+    transition: all 0.2s;
+    animation: armPulse 2.5s ease infinite;
+  }
+  .arm-banner:active { transform: scale(0.97); }
+  @keyframes armPulse {
+    0%,100% { box-shadow: 0 0 0 0 rgba(255,200,0,0.3); }
+    50%      { box-shadow: 0 0 0 8px rgba(255,200,0,0); }
+  }
+  .arm-icon { font-size: 26px; flex-shrink: 0; }
+  .arm-text { flex: 1; }
+  .arm-title { font-family:'Syne',sans-serif; font-size:13px; font-weight:800; color:#ffd700; }
+  .arm-sub   { font-size:11px; color:rgba(255,220,120,0.7); margin-top:2px; }
+  .arm-arrow { font-size:18px; color:#ffd700; flex-shrink:0; }
+
+  .arm-armed {
+    background: rgba(82,183,136,0.1);
+    border-color: rgba(82,183,136,0.35);
+    animation: none;
+  }
+  .arm-armed .arm-title { color: var(--accent2); }
+  .arm-armed .arm-sub   { color: rgba(100,200,150,0.6); }
+  .arm-armed .arm-arrow { color: var(--accent2); }
+
+  /* ============================================================
+     PASSWORD LOCK SCREEN
+  ============================================================ */
+  .lock-screen {
+    position: fixed;
+    inset: 0;
+    z-index: 9999;
+    background: var(--bg);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 30px 24px;
+  }
+
+  .lock-screen::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background:
+      radial-gradient(ellipse at 30% 30%, rgba(244,162,97,0.08) 0%, transparent 60%),
+      radial-gradient(ellipse at 70% 70%, rgba(82,183,136,0.08) 0%, transparent 60%);
+    pointer-events: none;
+  }
+
+  .lock-logo {
+    font-size: 64px;
+    margin-bottom: 8px;
+    animation: lockFloat 3s ease infinite;
+  }
+  @keyframes lockFloat {
+    0%,100% { transform: translateY(0); }
+    50%      { transform: translateY(-8px); }
+  }
+
+  .lock-title {
+    font-family: 'Syne', sans-serif;
+    font-size: 26px;
+    font-weight: 800;
+    background: linear-gradient(135deg, var(--accent), var(--accent2));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    margin-bottom: 4px;
+    text-align: center;
+  }
+
+  .lock-sub {
+    font-size: 13px;
+    color: var(--muted);
+    margin-bottom: 36px;
+    text-align: center;
+  }
+
+  .lock-input-wrap {
+    width: 100%;
+    max-width: 320px;
+    position: relative;
+    margin-bottom: 14px;
+  }
+
+  .lock-input {
+    width: 100%;
+    padding: 16px 52px 16px 18px;
+    border-radius: 16px;
+    border: 1.5px solid var(--border);
+    background: var(--card);
+    color: var(--text);
+    font-family: 'Syne', sans-serif;
+    font-size: 20px;
+    font-weight: 700;
+    letter-spacing: 4px;
+    text-align: center;
+    outline: none;
+    transition: border-color 0.2s;
+  }
+  .lock-input:focus { border-color: var(--accent); }
+  .lock-input.shake {
+    animation: lockShake 0.4s ease;
+    border-color: var(--accent3) !important;
+  }
+  @keyframes lockShake {
+    0%,100% { transform: translateX(0); }
+    20%     { transform: translateX(-10px); }
+    40%     { transform: translateX(10px); }
+    60%     { transform: translateX(-8px); }
+    80%     { transform: translateX(8px); }
+  }
+
+  .lock-eye {
+    position: absolute;
+    right: 16px;
+    top: 50%;
+    transform: translateY(-50%);
+    font-size: 20px;
+    cursor: pointer;
+    user-select: none;
+  }
+
+  .lock-btn {
+    width: 100%;
+    max-width: 320px;
+    padding: 16px;
+    border-radius: 16px;
+    border: none;
+    background: linear-gradient(135deg, var(--accent), var(--accent2));
+    color: #1a1a2e;
+    font-family: 'Syne', sans-serif;
+    font-size: 15px;
+    font-weight: 800;
+    cursor: pointer;
+    transition: all 0.2s;
+    box-shadow: 0 4px 24px rgba(244,162,97,0.3);
+    letter-spacing: 0.5px;
+  }
+  .lock-btn:active { transform: scale(0.97); }
+
+  .lock-error {
+    font-size: 12px;
+    color: var(--accent3);
+    margin-top: 12px;
+    text-align: center;
+    min-height: 18px;
+    font-weight: 500;
+  }
+
+  .lock-hint {
+    font-size: 11px;
+    color: var(--muted);
+    margin-top: 28px;
+    text-align: center;
+    opacity: 0.5;
+  }
+
+  @media (prefers-color-scheme: light) { /* always dark */ }
+</style>
+</head>
+<body>
+
+<!-- ============================================================
+     PASSWORD LOCK SCREEN
+     Change PAVAN_PASS below to your own password
+============================================================ -->
+<div class="lock-screen" id="lockScreen">
+  <div class="lock-logo">🌿</div>
+  <div class="lock-title">Pavan's Planner</div>
+  <div class="lock-sub">🔒 Enter your password to continue</div>
+
+  <div class="lock-input-wrap">
+    <input
+      class="lock-input"
+      id="lockInput"
+      type="password"
+      placeholder="••••••"
+      maxlength="20"
+      autocomplete="current-password"
+      onkeydown="if(event.key==='Enter') checkPassword()"
+    >
+    <span class="lock-eye" onclick="toggleLockEye()">👁️</span>
+  </div>
+
+  <button class="lock-btn" onclick="checkPassword()">UNLOCK →</button>
+  <div class="lock-error" id="lockError"></div>
+  <div class="lock-hint">Your personal health &amp; schedule data</div>
+</div>
+
+<div class="app">
+  <!-- HEADER -->
+  <div class="header">
+    <div class="header-top">
+      <div class="app-title">🌿 Pavan's Planner</div>
+      <div class="live-time" id="liveTime">--:--</div>
+    </div>
+    <div class="day-tabs" id="dayTabs"></div>
+  </div>
+
+  <!-- SCHEDULE VIEW -->
+  <div id="viewSchedule" class="view active">
+    <div class="day-progress" id="progressWrap" style="margin:12px 20px 0;">
+      <div class="day-progress-bar" id="progressBar" style="width:0%"></div>
+    </div>
+
+    <div id="notifBanner" class="notif-banner" onclick="requestNotifications()">
+      <span>🔔</span>
+      <span id="notifText">Enable notifications to get task reminders</span>
+    </div>
+
+    <div id="currentTaskArea"></div>
+    <div class="section-heading" id="timelineLabel">TODAY'S SCHEDULE</div>
+    <div class="gym-chip" id="gymChip" style="display:none">🏋️ Gym Day</div>
+    <!-- ARM ALARM Banner — must tap once to unlock audio on Android -->
+    <div class="arm-banner" id="armBanner" onclick="armAlarms()">
+      <div class="arm-icon">🔔</div>
+      <div class="arm-text">
+        <div class="arm-title">TAP HERE TO ARM ALARMS</div>
+        <div class="arm-sub">Required once — unlocks alarm sound on Android</div>
+      </div>
+      <div class="arm-arrow">›</div>
+    </div>
+
+    <!-- Morning Alarm Chip -->
+    <div class="morning-alarm-chip" id="morningAlarmChip">
+      <span>🌅</span>
+      <span>6:00 AM Suprabhatam wake-up — <strong id="morningCountdown">calculating...</strong></span>
+    </div>
+    <button class="btn-test-morning" onclick="triggerMorningAlarm(true)">
+      🌅 Preview Suprabhatam Wake-Up Alarm
+    </button>
+
+    <!-- Alarm Chip -->
+    <div class="alarm-time-chip" id="alarmChip">
+      <span>⏰</span>
+      <span>6:00 PM daily prep alarm — <strong id="alarmCountdown">calculating...</strong></span>
+    </div>
+    <button class="test-alarm-btn" onclick="triggerAlarm(true)">
+      🔔 Preview Tomorrow's Prep Reminder
+    </button>
+
+    <div class="timeline" id="timeline"></div>
+  </div>
+
+  <!-- MEALS VIEW -->
+  <div id="viewMeals" class="view">
+    <div class="section-heading">TODAY'S MEALS</div>
+    <div class="meal-timeline" id="mealTimeline"></div>
+  </div>
+
+  <!-- STATS VIEW -->
+  <div id="viewStats" class="view">
+    <div class="section-heading">WEEKLY OVERVIEW</div>
+    <div class="stats-grid" id="statsGrid"></div>
+    <div class="section-heading" style="margin-top:16px">WEEKLY MEALS</div>
+    <div class="meal-timeline" id="weeklyMeals"></div>
+  </div>
+
+  <!-- BOTTOM NAV -->
+  <div class="bottom-nav">
+    <button class="nav-btn active" onclick="switchView('schedule', this)">
+      <span class="nav-icon">📋</span>Schedule
+    </button>
+    <button class="nav-btn" onclick="switchView('meals', this)">
+      <span class="nav-icon">🍽️</span>Meals
+    </button>
+    <button class="nav-btn" onclick="switchView('stats', this)">
+      <span class="nav-icon">📊</span>Stats
+    </button>
+  </div>
+</div>
+
+<!-- MORNING ALARM MODAL – Suprabhatam Wake-Up -->
+<div class="morning-overlay" id="morningOverlay" style="display:none">
+  <div class="morning-modal">
+    <div class="morning-sky">
+      <div class="stars"></div>
+      <div class="sun-rise"></div>
+      <div class="morning-title">🙏 Suprabhatam</div>
+      <div class="morning-subtitle">M.S. Subbulakshmi • Sri Venkateswara Suprabhatam</div>
+      <div class="morning-time-badge">⏰ 6:00 AM — శుభోదయం Good Morning!</div>
+      <div class="song-visualizer" id="vizBars">
+        <div class="viz-bar"></div><div class="viz-bar"></div>
+        <div class="viz-bar"></div><div class="viz-bar"></div>
+        <div class="viz-bar"></div><div class="viz-bar"></div>
+        <div class="viz-bar"></div><div class="viz-bar"></div>
+        <div class="viz-bar"></div><div class="viz-bar"></div>
+        <div class="viz-bar"></div><div class="viz-bar"></div>
+      </div>
+    </div>
+    <div class="morning-body">
+      <div class="morning-first-task">
+        <div class="morning-first-label">🌅 First Task of the Day</div>
+        <div class="morning-first-name">🍋 Wake Up + Warm Lemon Water</div>
+        <div class="morning-first-detail">Start your hydration ritual — 06:30 AM</div>
+      </div>
+      <div class="volume-row">
+        <span class="volume-label">🔊</span>
+        <input type="range" class="vol-slider" id="morningVol" min="0" max="100" value="70" oninput="setMorningVolume(this.value)">
+        <span class="volume-label" id="volPct">70%</span>
+      </div>
+    </div>
+    <div class="morning-footer">
+      <button class="btn-morning-snooze" onclick="snoozeMorning()">😴 Snooze 5m</button>
+      <button class="btn-morning-stop" onclick="stopMorningAlarm()">🙏 Jai Govinda!</button>
+    </div>
+  </div>
+</div>
+
+<!-- PREP ALARM MODAL (overlays everything) -->
+<div class="alarm-overlay" id="alarmOverlay" style="display:none">
+  <div class="alarm-modal">
+    <div class="alarm-header">
+      <span class="alarm-ring-icon">🔔</span>
+      <div class="alarm-title">6:00 PM Prep Reminder!</div>
+      <div class="alarm-subtitle">Prepare now for a smooth tomorrow</div>
+      <div class="alarm-day-badge" id="alarmDayBadge">TOMORROW — MONDAY</div>
+    </div>
+    <div class="alarm-body" id="alarmBody"></div>
+    <div class="alarm-footer">
+      <button class="btn-dismiss" onclick="dismissAlarm()">Snooze 10m</button>
+      <button class="btn-stop-alarm" onclick="stopAlarm()">✓ Got It! Stop Alarm</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ============================================================
+// SCHEDULE DATA
+// ============================================================
+const DAYS = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+const DAYS_FULL = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+
+// Gym days: Mon(1), Tue(2), Thu(4), Fri(5), Sat(6) — based on chart
+const GYM_DAYS = [1, 2, 4, 5, 6];
+const GYM_DRINKS = {1:'Coconut water', 2:'Ash guard juice', 4:'Ash guard juice', 5:'Orange juice', 6:'Orange juice'};
+
+const BREAKFASTS = {
+  0: 'Idly Sambar', 1: 'Masala Oats', 2: 'Brown bread + boiled egg whites',
+  3: 'Oats Dosa', 4: 'Poha', 5: 'Sabudhana', 6: 'Khichidi'
+};
+
+const PRE_GYM = {
+  0: 'Dates + Tea + Dry Fruits', 1: 'Dates + Tea + Banana', 2: 'Dates + Tea + Banana',
+  3: 'Dates + Tea + Dry Fruits', 4: 'Dates + Tea + Banana', 5: 'Dates + Tea + Dry Fruits', 6: 'Dates + Tea + Banana'
+};
+
+const LUNCHES = {
+  0: 'Veg Curry + Chapati', 1: 'Tomato Dal + Brown Rice + Salad + Curd',
+  2: 'Rasam + Brown Rice + Salad + Curd', 3: 'Palak Dal + Chapati',
+  4: 'Chickpea Dal + Chapati', 5: 'Rasam + Brown Rice + Salad + Curd', 6: 'Dal + Chapati'
+};
+
+const DINNERS = {
+  0: 'Veg Curry + Chapati', 1: 'Tomato Dal + Brown Rice',
+  2: 'Rasam + Brown Rice', 3: 'Palak Dal + Chapati',
+  4: 'Chickpea Dal + Chapati', 5: 'Rasam + Brown Rice', 6: 'Dal + Chapati'
+};
+
+const SALADS = {
+  0: 'Moong Sprouts, Tomato, Onion, Coriander, Lemon',
+  1: 'Boiled Brown Chickpeas, Cucumber, Tomato, Onion, Lemon, Coriander',
+  2: 'Moong Sprouts, Tomato, Onion, Coriander, Lemon',
+  3: 'Boiled Green Lentils, Spinach, Tomato, Onion, Olive Oil',
+  4: 'Boiled Chickpeas, Cucumber, Tomato, Onion, Lemon, Coriander',
+  5: 'Moong Sprouts, Tomato, Onion, Coriander, Lemon',
+  6: 'Boiled Green Lentils, Spinach, Tomato, Onion, Olive Oil'
+};
+
+const SPECIALS = {
+  0: 'Egg Fried Rice (prep: soak chickpeas + moong dal)',
+  6: 'Fruit Bowl: Apple, Papaya, Pomegranate, Chia Seeds, Yogurt'
+};
+
+// Build schedule for a given day (0=Sun, 6=Sat)
+function buildSchedule(day) {
+  const isGym = GYM_DAYS.includes(day);
+  const isHoliday = day === 0;
+
+  const tasks = [
+    { time:'06:30', end:'06:45', name:'Wake Up + Warm Lemon Water', detail:'Start hydration ritual 🍋', cat:'wake', emoji:'🌅', badge:null },
+    { time:'06:45', end:'07:00', name:'Brushing', detail:'Morning hygiene', cat:'household', emoji:'🪥', badge:null },
+    { time:'07:00', end:'07:15', name:'Breakfast Prep', detail:`Prepare ${BREAKFASTS[day]}`, cat:'prep', emoji:'👨‍🍳', badge:'prep' },
+    { time:'07:15', end:'07:30', name:'Household Tasks', detail:'Kids bathing, home duties', cat:'household', emoji:'🏠', badge:null },
+    { time:'07:30', end:'08:00', name:'Pre-Workout Snack', detail: PRE_GYM[day], cat:'meal', emoji:'🍌', badge:'meal' },
+  ];
+
+  if (isGym) {
+    tasks.push({ time:'08:00', end:'08:30', name:'Gym Workout', detail:`Intense session + cool down with ${GYM_DRINKS[day]}`, cat:'gym', emoji:'🏋️', badge:'gym' });
+    tasks.push({ time:'08:15', end:'08:30', name:'Shower & Recovery', detail:'Post-workout recovery', cat:'rest', emoji:'🚿', badge:null });
+    tasks.push({ time:'08:30', end:'09:00', name:'Breakfast', detail: BREAKFASTS[day], cat:'meal', emoji:'🥣', badge:'meal' });
+    tasks.push({ time:'09:00', end:'10:00', name:'Study / Skill Learning', detail:'Focus block — no distractions', cat:'work', emoji:'📚', badge:'work' });
+  } else {
+    tasks.push({ time:'08:15', end:'08:30', name:'Shower & Recovery', detail:'Refresh and energise', cat:'rest', emoji:'🚿', badge:null });
+    tasks.push({ time:'08:30', end:'09:00', name:'Breakfast', detail: BREAKFASTS[day], cat:'meal', emoji:'🥣', badge:'meal' });
+    tasks.push({ time:'09:00', end:'10:00', name:'Study / Skill Learning', detail:'Focus block', cat:'work', emoji:'📚', badge:'work' });
+  }
+
+  tasks.push({ time:'10:00', end:'11:00', name:'Walk & Light Activity', detail:'Gentle movement, hydrate well', cat:'rest', emoji:'🚶', badge:null });
+  tasks.push({ time:'11:00', end:'11:30', name:'Salad Prep', detail: SALADS[day], cat:'prep', emoji:'🥗', badge:'prep' });
+  tasks.push({ time:'11:30', end:'12:00', name:'Project Work', detail:'Deep work session', cat:'work', emoji:'💻', badge:'work' });
+  tasks.push({ time:'12:00', end:'12:30', name:'Lunch', detail: LUNCHES[day], cat:'meal', emoji:'🍱', badge:'meal' });
+  tasks.push({ time:'12:30', end:'13:00', name:'Relaxation / Nap', detail:'Rest and recharge 💤', cat:'rest', emoji:'😴', badge:null });
+  tasks.push({ time:'13:00', end:'14:00', name:'Get Ready & Travel Prep', detail:'Prepare for work shift', cat:'household', emoji:'👔', badge:null });
+
+  if (!isHoliday) {
+    tasks.push({ time:'14:00', end:'19:00', name:'Work Shift', detail:'First half of work shift', cat:'work', emoji:'💼', badge:'work' });
+    tasks.push({ time:'19:00', end:'19:15', name:'Dinner', detail: DINNERS[day], cat:'meal', emoji:'🍛', badge:'meal' });
+    tasks.push({ time:'19:15', end:'22:00', name:'Work Shift (cont.)', detail:'Second half of work shift', cat:'work', emoji:'💼', badge:'work' });
+    tasks.push({ time:'22:00', end:'22:30', name:'Travel Back Home', detail:'Commute home 🚌', cat:'household', emoji:'🏠', badge:null });
+  } else {
+    tasks.push({ time:'14:00', end:'18:00', name:'Holiday — Free Time', detail:'Rest, family, or hobby time 🎉', cat:'rest', emoji:'🌴', badge:null });
+  }
+
+  tasks.push({ time:'22:30', end:'23:00', name:'Soak Almonds & Walnuts', detail:'20 badam + walnuts soaked for tomorrow', cat:'prep', emoji:'🌰', badge:'prep' });
+
+  if (SPECIALS[day]) {
+    tasks.push({ time:'23:00', end:'23:30', name:'Special Prep', detail: SPECIALS[day], cat:'prep', emoji:'⭐', badge:'prep' });
+  }
+
+  return tasks;
+}
+
+// ============================================================
+// STATE
+// ============================================================
+let currentDay = new Date().getDay();
+let selectedDay = currentDay;
+let completedTasks = JSON.parse(localStorage.getItem('completed_' + new Date().toDateString()) || '{}');
+let notifGranted = Notification.permission === 'granted';
+let notifScheduled = false;
+let currentView = 'schedule';
+
+// ============================================================
+// RENDER FUNCTIONS
+// ============================================================
+function timeToMinutes(t) {
+  const [h, m] = t.split(':').map(Number);
+  return h * 60 + m;
+}
+
+function getCurrentMinutes() {
+  const n = new Date();
+  return n.getHours() * 60 + n.getMinutes();
+}
+
+function formatTime12(t) {
+  let [h, m] = t.split(':').map(Number);
+  const ampm = h >= 12 ? 'PM' : 'AM';
+  h = h % 12 || 12;
+  return `${h}:${String(m).padStart(2,'0')} ${ampm}`;
+}
+
+function renderDayTabs() {
+  const tabs = document.getElementById('dayTabs');
+  tabs.innerHTML = DAYS.map((d, i) => `
+    <div class="day-tab ${i === selectedDay ? 'active' : ''} ${i === currentDay ? 'today-marker' : ''}"
+         onclick="selectDay(${i})">${d}</div>
+  `).join('');
+}
+
+function renderSchedule() {
+  const schedule = buildSchedule(selectedDay);
+  const now = getCurrentMinutes();
+  const isToday = selectedDay === currentDay;
+
+  // Find current task
+  let currentIdx = -1;
+  if (isToday) {
+    for (let i = 0; i < schedule.length; i++) {
+      const start = timeToMinutes(schedule[i].time);
+      const end = timeToMinutes(schedule[i].end);
+      if (now >= start && now < end) { currentIdx = i; break; }
+    }
+    if (currentIdx === -1 && now < timeToMinutes(schedule[0].time)) currentIdx = 0;
+  }
+
+  // Current task card
+  const area = document.getElementById('currentTaskArea');
+  if (isToday && currentIdx >= 0) {
+    const t = schedule[currentIdx];
+    const next = schedule[currentIdx + 1];
+    area.innerHTML = `
+      <div class="current-task-card">
+        <div class="current-label"><div class="pulse-dot"></div> NOW</div>
+        <div class="current-task-name">${t.emoji} ${t.name}</div>
+        <div class="current-task-time">${formatTime12(t.time)} – ${formatTime12(t.end)}</div>
+        ${t.detail ? `<div class="current-task-time" style="margin-top:4px;color:#aaa">${t.detail}</div>` : ''}
+        ${next ? `<div class="next-up">Next up: <span>${next.emoji} ${next.name}</span> at ${formatTime12(next.time)}</div>` : ''}
+      </div>
+    `;
+  } else if (!isToday) {
+    area.innerHTML = '';
+  } else {
+    area.innerHTML = `<div class="current-task-card"><div class="current-label">ALL DONE</div><div class="current-task-name">🌙 Day Complete!</div><div class="current-task-time">Great job following the plan today!</div></div>`;
+  }
+
+  // Progress bar
+  if (isToday) {
+    const dayStart = timeToMinutes('06:30');
+    const dayEnd = timeToMinutes('23:30');
+    const pct = Math.min(100, Math.max(0, ((now - dayStart) / (dayEnd - dayStart)) * 100));
+    document.getElementById('progressBar').style.width = pct + '%';
+    document.getElementById('progressWrap').style.display = '';
+  } else {
+    document.getElementById('progressWrap').style.display = 'none';
+  }
+
+  // Gym chip
+  const gymChip = document.getElementById('gymChip');
+  gymChip.style.display = GYM_DAYS.includes(selectedDay) ? '' : 'none';
+
+  // Timeline label
+  document.getElementById('timelineLabel').textContent = isToday ? 'TODAY\'S SCHEDULE' : `${DAYS_FULL[selectedDay].toUpperCase()} SCHEDULE`;
+
+  // Timeline items
+  const tl = document.getElementById('timeline');
+  tl.innerHTML = schedule.map((task, i) => {
+    const isPast = isToday && now > timeToMinutes(task.end);
+    const isActive = i === currentIdx;
+    const isDone = completedTasks[`${selectedDay}_${i}`] || isPast;
+    const badgeHtml = task.badge ? `<span class="task-badge badge-${task.badge}">${task.badge}</span>` : '';
+    return `
+      <div class="timeline-item" style="animation-delay:${i * 0.04}s">
+        <div class="time-col">
+          <div class="time-text">${formatTime12(task.time)}</div>
+          <div class="time-dot ${isActive ? 'active-dot' : ''}"></div>
+        </div>
+        <div class="task-card cat-${task.cat} ${isActive ? 'active-task' : ''} ${isDone && !isActive ? 'done' : ''}" onclick="toggleDone(${i})">
+          <div class="task-name"><span class="task-emoji">${task.emoji}</span>${task.name}</div>
+          ${task.detail ? `<div class="task-detail">${task.detail}</div>` : ''}
+          ${badgeHtml}
+          <button class="check-btn ${isDone && !isActive ? 'checked' : ''}" onclick="event.stopPropagation();toggleDone(${i})">✓</button>
+        </div>
+      </div>
+    `;
+  }).join('');
+
+  // Auto-scroll to current task
+  if (isToday && currentIdx >= 0) {
+    setTimeout(() => {
+      const items = tl.querySelectorAll('.timeline-item');
+      if (items[currentIdx]) {
+        items[currentIdx].scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }
+    }, 300);
+  }
+}
+
+function renderMeals() {
+  const day = selectedDay;
+  const meals = [
+    { type:'snack', icon:'🍌', title:'Pre-Workout Snack', time:'07:30 AM', desc: PRE_GYM[day] },
+    { type:'breakfast', icon:'🥣', title:'Breakfast', time:'08:30 AM', desc: BREAKFASTS[day] },
+    { type:'lunch', icon:'🍱', title:'Lunch', time:'12:00 PM', desc: LUNCHES[day] },
+    { type:'dinner', icon:'🍛', title:'Dinner', time:'07:00 PM', desc: DINNERS[day] },
+    { type:'snack', icon:'🥗', title:'Salad', time:'11:00 AM', desc: SALADS[day] },
+  ];
+
+  if (SPECIALS[day]) {
+    meals.push({ type:'snack', icon:'⭐', title:'Special', time:'11:00 PM', desc: SPECIALS[day] });
+  }
+
+  meals.sort((a,b) => a.time.localeCompare(b.time));
+
+  document.getElementById('mealTimeline').innerHTML = meals.map(m => `
+    <div class="meal-card">
+      <div class="meal-icon ${m.type}">${m.icon}</div>
+      <div class="meal-info">
+        <div class="meal-title">${m.title}</div>
+        <div class="meal-desc">${m.desc}</div>
+        <div class="meal-time">${m.time}</div>
+      </div>
+    </div>
+  `).join('');
+}
+
+function renderStats() {
+  const today = currentDay;
+  const schedule = buildSchedule(today);
+  const totalTasks = schedule.length;
+  const doneTasks = Object.keys(completedTasks).filter(k => k.startsWith(today + '_')).length;
+  const gymCount = GYM_DAYS.length;
+
+  document.getElementById('statsGrid').innerHTML = `
+    <div class="stat-card">
+      <div class="stat-value">${doneTasks}/${totalTasks}</div>
+      <div class="stat-label">Tasks Today</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-value">${gymCount}</div>
+      <div class="stat-label">Gym Days/Week</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-value">5</div>
+      <div class="stat-label">Meals/Day</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-value">7</div>
+      <div class="stat-label">Days Planned</div>
+    </div>
+  `;
+
+  // Weekly meals overview
+  document.getElementById('weeklyMeals').innerHTML = DAYS.map((d, i) => `
+    <div class="meal-card">
+      <div class="meal-icon breakfast" style="font-family:'Syne',sans-serif;font-size:13px;font-weight:800;color:var(--accent)">${d}</div>
+      <div class="meal-info">
+        <div class="meal-title">${BREAKFASTS[i]}</div>
+        <div class="meal-desc">${LUNCHES[i]}</div>
+        <div class="meal-time">${GYM_DAYS.includes(i) ? '🏋️ Gym Day' : '🌿 Rest Day'}</div>
+      </div>
+    </div>
+  `).join('');
+}
+
+// ============================================================
+// ACTIONS
+// ============================================================
+function selectDay(day) {
+  selectedDay = day;
+  renderDayTabs();
+  renderCurrentView();
+}
+
+function toggleDone(idx) {
+  const key = `${selectedDay}_${idx}`;
+  if (completedTasks[key]) {
+    delete completedTasks[key];
+  } else {
+    completedTasks[key] = true;
+    showToast('Task marked complete ✓');
+  }
+  localStorage.setItem('completed_' + new Date().toDateString(), JSON.stringify(completedTasks));
+  renderSchedule();
+}
+
+function switchView(view, btn) {
+  currentView = view;
+  document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+  document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+
+  if (view === 'schedule') {
+    document.getElementById('viewSchedule').classList.add('active');
+    renderSchedule();
+  } else if (view === 'meals') {
+    document.getElementById('viewMeals').classList.add('active');
+    renderMeals();
+  } else if (view === 'stats') {
+    document.getElementById('viewStats').classList.add('active');
+    renderStats();
+  }
+
+  btn.classList.add('active');
+}
+
+function renderCurrentView() {
+  if (currentView === 'schedule') renderSchedule();
+  else if (currentView === 'meals') renderMeals();
+  else renderStats();
+}
+
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2500);
+}
+
+// ============================================================
+// NOTIFICATIONS
+// ============================================================
+async function requestNotifications() {
+  if (!('Notification' in window)) {
+    showToast('Notifications not supported in this browser');
+    return;
+  }
+  const perm = await Notification.requestPermission();
+  notifGranted = perm === 'granted';
+  updateNotifBanner();
+  if (notifGranted) {
+    showToast('Notifications enabled! 🔔');
+    scheduleNotifications();
+  }
+}
+
+function updateNotifBanner() {
+  const banner = document.getElementById('notifBanner');
+  const text = document.getElementById('notifText');
+  if (Notification.permission === 'granted') {
+    banner.style.display = 'none';
+  } else if (Notification.permission === 'denied') {
+    banner.classList.add('denied');
+    text.textContent = 'Notifications blocked — enable in browser settings';
+  }
+}
+
+function scheduleNotifications() {
+  if (!notifGranted || notifScheduled) return;
+  notifScheduled = true;
+  const schedule = buildSchedule(currentDay);
+  const now = getCurrentMinutes();
+
+  schedule.forEach(task => {
+    const taskMin = timeToMinutes(task.time);
+    const msUntil = (taskMin - now) * 60 * 1000;
+    if (msUntil > 0 && msUntil < 12 * 60 * 60 * 1000) {
+      setTimeout(() => {
+        new Notification(`🌿 ${task.name}`, {
+          body: task.detail || 'Time for your next task!',
+          icon: 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><text y=".9em" font-size="90">🌿</text></svg>',
+          badge: 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><text y=".9em" font-size="90">🌿</text></svg>',
+          tag: task.time
+        });
+      }, msUntil);
+    }
+  });
+}
+
+// ============================================================
+// NEXT-DAY FOOD PREP DATA
+// ============================================================
+
+// What needs to be prepared/soaked the evening before
+const NEXT_DAY_PREP = {
+  // For Monday (day=1): prep Sun night
+  1: [
+    { type:'soak', emoji:'🌰', name:'Soak Almonds & Walnuts', desc:'20 badam + walnuts — soak overnight in water' },
+    { type:'breakfast', emoji:'🥣', name:'Masala Oats Setup', desc:'Keep oats, masala, veggies ready for morning cook' },
+    { type:'gym', emoji:'🏋️', name:'Gym Bag Ready', desc:'Pack gym clothes, towel, water bottle' },
+    { type:'salad', emoji:'🥗', name:'Salad Ingredients', desc:'Brown chickpeas — soak overnight in water' },
+  ],
+  // For Tuesday (day=2): prep Mon night
+  2: [
+    { type:'soak', emoji:'🌰', name:'Soak Almonds & Walnuts', desc:'20 badam + walnuts — soak overnight in water' },
+    { type:'breakfast', emoji:'🍳', name:'Boiled Eggs Prep', desc:'Boil eggs, keep brown bread ready — separate yolks in morning' },
+    { type:'gym', emoji:'🏋️', name:'Gym Bag Ready', desc:'Pack gym clothes, towel, ash guard juice prep' },
+    { type:'salad', emoji:'🥗', name:'Salad Ingredients', desc:'Moong sprouts — keep soaked sprouts ready, cut tomato & onion' },
+  ],
+  // For Wednesday (day=3): prep Tue night
+  3: [
+    { type:'soak', emoji:'🌰', name:'Soak Almonds & Walnuts', desc:'20 badam + walnuts — soak overnight in water' },
+    { type:'breakfast', emoji:'🥞', name:'Oats Dosa Batter', desc:'Grind oats dosa batter, keep to ferment overnight' },
+    { type:'salad', emoji:'🥗', name:'Salad Prep', desc:'Boil green lentils, keep spinach, tomato, onion ready' },
+  ],
+  // For Thursday (day=4): prep Wed night
+  4: [
+    { type:'soak', emoji:'🌰', name:'Soak Almonds & Walnuts', desc:'20 badam + walnuts — soak overnight in water' },
+    { type:'breakfast', emoji:'🍚', name:'Poha Prep', desc:'Keep washed poha, mustard seeds, curry leaves, peanuts ready' },
+    { type:'gym', emoji:'🏋️', name:'Gym Bag Ready', desc:'Pack gym clothes, towel, ash guard juice prep' },
+    { type:'salad', emoji:'🥗', name:'Salad Ingredients', desc:'Chickpeas — soak overnight in water (for salad + chickpea dal)' },
+  ],
+  // For Friday (day=5): prep Thu night
+  5: [
+    { type:'soak', emoji:'🌰', name:'Soak Almonds & Walnuts', desc:'20 badam + walnuts — soak overnight in water' },
+    { type:'breakfast', emoji:'🍲', name:'Sabudhana Soak', desc:'Soak sabudhana (sago) in water overnight — keep peanuts ready' },
+    { type:'gym', emoji:'🏋️', name:'Gym Bag Ready', desc:'Pack gym clothes, towel, orange juice prep' },
+    { type:'salad', emoji:'🥗', name:'Salad Ingredients', desc:'Moong sprouts — check sprouts, cut tomato & onion' },
+  ],
+  // For Saturday (day=6): prep Fri night
+  6: [
+    { type:'soak', emoji:'🌰', name:'Soak Almonds & Walnuts', desc:'20 badam + walnuts — soak overnight in water' },
+    { type:'breakfast', emoji:'🍲', name:'Khichidi Prep', desc:'Keep rice, moong dal, veggies, spices ready for morning cook' },
+    { type:'gym', emoji:'🏋️', name:'Gym Bag Ready', desc:'Pack gym clothes, towel, orange juice prep' },
+    { type:'salad', emoji:'🥗', name:'Salad Ingredients', desc:'Boil green lentils, keep spinach, tomato, onion, olive oil ready' },
+    { type:'special', emoji:'⭐', name:'Fruit Bowl Prep', desc:'Keep apple, papaya, pomegranate, chia seeds, yogurt ready in fridge' },
+  ],
+  // For Sunday (day=0): prep Sat night
+  0: [
+    { type:'soak', emoji:'🌰', name:'Soak Almonds & Walnuts', desc:'20 badam + walnuts — soak overnight in water' },
+    { type:'breakfast', emoji:'🍛', name:'Idly Batter', desc:'Keep idly batter fermented/ready, prepare sambar ingredients' },
+    { type:'special', emoji:'⭐', name:'Egg Fried Rice Soak', desc:'Soak chickpeas + moong dal overnight for tomorrow\'s special prep' },
+    { type:'salad', emoji:'🥗', name:'Salad Ingredients', desc:'Brown chickpeas — soak overnight in water' },
+  ],
+};
+
+// ============================================================
+// 6 PM PREP ALARM STATE
+// ============================================================
+let alarmFired6pm = false;
+let snoozeTimeout = null;
+
+// ============================================================
+// TOMORROW PREP MODAL
+// ============================================================
+function getTomorrowDay() {
+  return (currentDay + 1) % 7;
+}
+
+function buildPrepHTML(day) {
+  const items = NEXT_DAY_PREP[day] || [];
+  // Always include nuts soak
+  const hasNuts = items.find(i => i.type === 'nuts' || i.type === 'soak');
+
+  const sections = {
+    soak:      { label: '💧 Soak Overnight', items: [] },
+    breakfast: { label: '🍳 Breakfast Prep', items: [] },
+    gym:       { label: '🏋️ Gym Prep',       items: [] },
+    salad:     { label: '🥗 Salad Prep',     items: [] },
+    special:   { label: '⭐ Special Prep',   items: [] },
+    nuts:      { label: '🌰 Nut Soak',       items: [] },
+  };
+
+  items.forEach(item => {
+    if (sections[item.type]) sections[item.type].items.push(item);
+  });
+
+  let html = '';
+  Object.entries(sections).forEach(([key, sec]) => {
+    if (sec.items.length === 0) return;
+    html += `<div class="prep-section">
+      <div class="prep-section-title">${sec.label}</div>`;
+    sec.items.forEach((item, idx) => {
+      const id = `prep_${key}_${idx}`;
+      html += `
+        <div class="prep-item type-${item.type}" id="${id}" onclick="togglePrep('${id}')">
+          <div class="prep-emoji">${item.emoji}</div>
+          <div class="prep-info">
+            <div class="prep-name">${item.name}</div>
+            <div class="prep-desc">${item.desc}</div>
+          </div>
+          <button class="prep-check" id="chk_${id}">✓</button>
+        </div>`;
+    });
+    html += `</div>`;
+  });
+  return html;
+}
+
+function togglePrep(id) {
+  const el = document.getElementById(id);
+  const chk = document.getElementById('chk_' + id);
+  if (!el) return;
+  el.classList.toggle('prep-checked');
+  chk.classList.toggle('done');
+}
+
+function triggerAlarm(isTest = false) {
+  const tomorrow = getTomorrowDay();
+  const tomorrowName = DAYS_FULL[tomorrow].toUpperCase();
+
+  // Set modal content
+  document.getElementById('alarmDayBadge').textContent =
+    `TOMORROW — ${tomorrowName}${GYM_DAYS.includes(tomorrow) ? ' 🏋️' : ' 🌿'}`;
+  document.getElementById('alarmBody').innerHTML = buildPrepHTML(tomorrow);
+
+  // Show overlay
+  document.getElementById('alarmOverlay').style.display = 'flex';
+  document.body.style.overflow = 'hidden';
+
+  // Start alarm sound
+  startAlarmSound();
+
+  // Send notification too
+  if (Notification.permission === 'granted') {
+    const items = NEXT_DAY_PREP[tomorrow] || [];
+    const itemList = items.slice(0, 3).map(i => `• ${i.name}`).join('\n');
+    new Notification(`⏰ 6 PM — Prep for ${DAYS_FULL[tomorrow]}!`, {
+      body: `Time to prepare for tomorrow:\n${itemList}`,
+      tag: 'prep-alarm',
+      requireInteraction: true,
+    });
+  }
+
+  if (!isTest) alarmFired6pm = true;
+}
+
+function stopAlarm() {
+  stopAlarmSound();
+  document.getElementById('alarmOverlay').style.display = 'none';
+  document.body.style.overflow = '';
+  if (snoozeTimeout) { clearTimeout(snoozeTimeout); snoozeTimeout = null; }
+  showToast('Prep reminder dismissed ✓');
+}
+
+function dismissAlarm() {
+  stopAlarmSound();
+  document.getElementById('alarmOverlay').style.display = 'none';
+  document.body.style.overflow = '';
+  showToast('Snoozed 10 minutes ⏳');
+  snoozeTimeout = setTimeout(() => triggerAlarm(false), 10 * 60 * 1000);
+}
+
+// ============================================================
+// AUDIO ENGINE — ARM + Web Audio API + <audio> element
+// Android blocks audio from timers unless AudioContext was
+// unlocked by a real user tap first. The ARM button does this.
+// ============================================================
+let audioArmed    = false;
+let audioCtxMain  = null;       // shared unlocked AudioContext
+let morningVolume = 70;         // 0–100
+let morningFired6am    = false;
+let morningSnoozeTimeout = null;
+
+// <audio> element for real Suprabhatam (online)
+// MS Subbulakshmi — Saregama official stream via proxy-friendly CDN
+const SUPRABHATAM_URLS = [
+  'https://archive.org/download/mssubbulakshmi_suprabhatam/Sri_Venkateswara_Suprabhatam_MS_Subbulakshmi.mp3',
+  'https://upload.wikimedia.org/wikipedia/commons/8/82/MS_Subbulakshmi_-_Suprabhatam.ogg',
+];
+let audioEl = null;
+let audioElOk = false;
+
+function getCtx() {
+  if (!audioCtxMain) audioCtxMain = new (window.AudioContext || window.webkitAudioContext)();
+  return audioCtxMain;
+}
+
+// Called when user taps the ARM ALARM banner — MUST be in user gesture
+function armAlarms() {
+  if (audioArmed) return;
+
+  // 1) Unlock Web Audio API
+  const ctx = getCtx();
+  ctx.resume().then(() => {
+    // Play a 1ms silent note to fully unlock
+    const osc = ctx.createOscillator();
+    const g   = ctx.createGain();
+    g.gain.value = 0.0001;
+    osc.connect(g);
+    g.connect(ctx.destination);
+    osc.start();
+    osc.stop(ctx.currentTime + 0.01);
+  });
+
+  // 2) Create and prime <audio> element (must happen in user gesture on iOS/Android)
+  audioEl = document.createElement('audio');
+  audioEl.crossOrigin = 'anonymous';
+  audioEl.loop = true;
+  audioEl.volume = morningVolume / 100;
+  audioEl.preload = 'none';
+
+  // Try each URL until one works
+  let urlIdx = 0;
+  function tryNextUrl() {
+    if (urlIdx >= SUPRABHATAM_URLS.length) { audioElOk = false; return; }
+    audioEl.src = SUPRABHATAM_URLS[urlIdx++];
+    audioEl.load();
+  }
+  audioEl.onerror = () => tryNextUrl();
+  audioEl.oncanplaythrough = () => { audioElOk = true; };
+  tryNextUrl();
+
+  audioArmed = true;
+
+  // Update banner
+  const banner = document.getElementById('armBanner');
+  if (banner) {
+    banner.classList.add('arm-armed');
+    banner.querySelector('.arm-icon').textContent = '✅';
+    banner.querySelector('.arm-title').textContent = 'ALARMS ARMED — Sound Ready!';
+    banner.querySelector('.arm-sub').textContent  = 'Both 6 AM & 6 PM alarms are active';
+    banner.querySelector('.arm-arrow').textContent = '🔔';
+    banner.onclick = null;
+    setTimeout(() => { banner.style.display = 'none'; }, 3000);
+  }
+
+  showToast('🔔 Alarms armed! Sound will work perfectly');
+}
+
+// ─────────────────────────────────────────────────────────────
+// Suprabhatam Web Audio Synthesizer (offline fallback)
+// Bhairavi raga — flute + tanpura drone
+// ─────────────────────────────────────────────────────────────
+const N = {
+  NI3:246.94, SA:261.63, RI:277.18, GA:311.13, MA:349.23,
+  PA:392.00, DHA:415.30, NI:466.16, SA2:523.25,
+  RI2:554.37, GA2:622.25
+};
+const BEAT = 0.40;
+const MELODY = [
+  // Bell intro
+  [N.SA,0.5,0.3],[N.PA,0.5,0.4],[N.SA2,0.5,0.5],[0,0.5,0],
+  // "Kau-sal-ya su-pra-ja Ra-ma"
+  [N.PA,0.6,0.8],[N.MA,0.4,0.7],[N.PA,0.4,0.8],[N.DHA,0.4,0.8],
+  [N.NI,0.4,0.8],[N.DHA,0.4,0.7],[N.PA,0.6,0.7],[N.MA,0.4,0.6],
+  [N.GA,0.4,0.6],[N.RI,0.4,0.5],[N.SA,1.0,0.7],[0,0.3,0],
+  // "Pur-va san-dhya pra-var-ta-te"
+  [N.SA,0.4,0.6],[N.RI,0.4,0.7],[N.GA,0.4,0.8],[N.MA,0.4,0.8],
+  [N.PA,0.6,0.9],[N.MA,0.3,0.7],[N.GA,0.3,0.7],[N.PA,0.4,0.8],
+  [N.DHA,0.4,0.8],[N.NI,0.4,0.8],[N.SA2,0.8,0.9],[0,0.4,0],
+  // Rising "Ut-tish-tha"
+  [N.SA2,0.4,0.9],[N.NI,0.3,0.8],[N.DHA,0.3,0.8],[N.PA,0.3,0.8],
+  [N.DHA,0.3,0.8],[N.NI,0.3,0.8],[N.SA2,0.6,1.0],[N.NI,0.3,0.8],
+  [N.DHA,0.3,0.7],[N.PA,0.3,0.7],[N.MA,0.4,0.6],[N.GA,0.4,0.6],
+  [N.RI,0.4,0.5],[N.SA,1.0,0.7],[0,0.5,0],
+  // Soaring climax
+  [N.PA,0.3,0.7],[N.NI,0.3,0.8],[N.SA2,0.4,0.9],[N.RI2,0.4,1.0],
+  [N.GA2,0.3,1.0],[N.RI2,0.3,0.9],[N.SA2,0.3,0.9],[N.NI,0.3,0.8],
+  [N.DHA,0.3,0.7],[N.PA,0.3,0.7],[N.MA,0.3,0.6],[N.GA,0.3,0.6],
+  [N.RI,0.3,0.5],[N.SA,0.3,0.5],[N.NI3,0.4,0.4],[N.SA,1.2,0.6],
+  [0,0.8,0],
+];
+
+let synthNodes = [];
+let synthLoopId = null;
+let synthPlaying = false;
+let masterGain = null;
+
+function playFluteNote(ctx, g, freq, t, dur, amp) {
+  if (!freq) return;
+  const ng = ctx.createGain();
+  ng.connect(g);
+  const atk = Math.min(0.08, dur * 0.15);
+  const rel = Math.min(0.12, dur * 0.25);
+  ng.gain.setValueAtTime(0, t);
+  ng.gain.linearRampToValueAtTime(amp * 0.9, t + atk);
+  ng.gain.setValueAtTime(amp * 0.9, t + dur - rel);
+  ng.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+
+  [[1,0.5],[2,0.22],[3,0.1],[4,0.05]].forEach(([r, gh]) => {
+    const osc = ctx.createOscillator();
+    const hg  = ctx.createGain();
+    hg.gain.value = gh;
+    osc.type = 'sine';
+    osc.frequency.value = freq * r;
+    if (r === 1 && dur > 0.3) {
+      const lfo = ctx.createOscillator();
+      const lg  = ctx.createGain();
+      lfo.frequency.value = 5.5;
+      lg.gain.value = freq * 0.011;
+      lfo.connect(lg); lg.connect(osc.frequency);
+      lfo.start(t + atk); lfo.stop(t + dur);
+      synthNodes.push(lfo);
+    }
+    osc.connect(hg); hg.connect(ng);
+    osc.start(t); osc.stop(t + dur + 0.01);
+    synthNodes.push(osc);
+  });
+}
+
+function playDrone(ctx, g, t, dur) {
+  [[N.SA/2, 0.07],[N.PA/2, 0.035],[N.SA, 0.04]].forEach(([freq, amp]) => {
+    const osc = ctx.createOscillator();
+    const og  = ctx.createGain();
+    osc.type = 'sine'; osc.frequency.value = freq;
+    og.gain.setValueAtTime(0, t);
+    og.gain.linearRampToValueAtTime(amp, t + 1.5);
+    og.gain.setValueAtTime(amp, t + dur - 1.0);
+    og.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+    osc.connect(og); og.connect(g);
+    osc.start(t); osc.stop(t + dur);
+    synthNodes.push(osc);
+  });
+}
+
+function scheduleLoop(ctx, g, startT) {
+  let t = startT;
+  const loopDur = MELODY.reduce((s, n) => s + n[1] * BEAT, 0);
+  playDrone(ctx, g, t, loopDur + 1);
+  MELODY.forEach(([freq, beats, amp]) => {
+    playFluteNote(ctx, g, freq, t, beats * BEAT, amp);
+    t += beats * BEAT;
+  });
+  if (synthPlaying) {
+    synthLoopId = setTimeout(() => { if (synthPlaying) scheduleLoop(ctx, g, t); },
+      (loopDur - 1) * 1000);
+  }
+}
+
+function startSynth() {
+  stopSynth();
+  synthPlaying = true;
+  const ctx = getCtx();
+  ctx.resume();
+  masterGain = ctx.createGain();
+  masterGain.gain.setValueAtTime(0, ctx.currentTime);
+  masterGain.gain.linearRampToValueAtTime(morningVolume / 100, ctx.currentTime + 2.5);
+  masterGain.connect(ctx.destination);
+  scheduleLoop(ctx, masterGain, ctx.currentTime);
+}
+
+function stopSynth() {
+  synthPlaying = false;
+  if (synthLoopId) { clearTimeout(synthLoopId); synthLoopId = null; }
+  synthNodes.forEach(n => { try { n.stop(); } catch(e){} });
+  synthNodes = [];
+}
+
+// ─────────────────────────────────────────────────────────────
+// Unified start / stop morning music
+// Tries <audio> element first (real MS recording), falls back to synth
+// ─────────────────────────────────────────────────────────────
+function startMorningMusic() {
+  let usedAudio = false;
+  if (audioElOk && audioEl) {
+    try {
+      audioEl.volume = morningVolume / 100;
+      audioEl.currentTime = 0;
+      const p = audioEl.play();
+      if (p) p.then(() => { usedAudio = true; }).catch(() => startSynth());
+      else usedAudio = true;
+    } catch(e) { /* fall through */ }
+  }
+  if (!usedAudio) startSynth();
+  document.querySelectorAll('.viz-bar').forEach(b => b.classList.remove('paused'));
+}
+
+function stopMorningMusic() {
+  stopSynth();
+  if (audioEl) { try { audioEl.pause(); audioEl.currentTime = 0; } catch(e){} }
+  document.querySelectorAll('.viz-bar').forEach(b => b.classList.add('paused'));
+}
+
+function setMorningVolume(val) {
+  morningVolume = parseInt(val);
+  document.getElementById('volPct').textContent = val + '%';
+  if (audioEl) audioEl.volume = morningVolume / 100;
+  if (masterGain && audioCtxMain) {
+    masterGain.gain.setTargetAtTime(morningVolume / 100, audioCtxMain.currentTime, 0.1);
+  }
+}
+
+// ─────────────────────────────────────────────────────────────
+// Beep alarm for 6 PM prep reminder (Web Audio)
+// ─────────────────────────────────────────────────────────────
+let beepInterval = null;
+let beepNodes = [];
+
+function playBeep() {
+  const ctx = getCtx();
+  if (ctx.state === 'suspended') ctx.resume();
+  [800, 1000, 1200].forEach((freq, i) => {
+    const osc = ctx.createOscillator();
+    const g   = ctx.createGain();
+    osc.connect(g); g.connect(ctx.destination);
+    osc.type = 'sine'; osc.frequency.value = freq;
+    const t = ctx.currentTime + i * 0.25;
+    g.gain.setValueAtTime(0, t);
+    g.gain.linearRampToValueAtTime(0.55, t + 0.05);
+    g.gain.exponentialRampToValueAtTime(0.001, t + 0.22);
+    osc.start(t); osc.stop(t + 0.25);
+    beepNodes.push(osc);
+  });
+}
+function startAlarmSound() { stopAlarmSound(); playBeep(); beepInterval = setInterval(playBeep, 1800); }
+function stopAlarmSound()  {
+  if (beepInterval) { clearInterval(beepInterval); beepInterval = null; }
+  beepNodes.forEach(n => { try { n.stop(); } catch(e){} });
+  beepNodes = [];
+}
+
+// ============================================================
+// MORNING ALARM MODAL
+// ============================================================
+function triggerMorningAlarm(isTest = false) {
+  if (!audioArmed && !isTest) {
+    // Show modal but prompt to arm
+    document.getElementById('morningOverlay').style.display = 'flex';
+    document.body.style.overflow = 'hidden';
+    showToast('Tap ARM ALARMS button first for sound!');
+    return;
+  }
+  document.getElementById('morningOverlay').style.display = 'flex';
+  document.body.style.overflow = 'hidden';
+  startMorningMusic();
+
+  if (Notification.permission === 'granted') {
+    new Notification('🌅 Suprabhatam — Good Morning Pavan!', {
+      body: `${DAYS_FULL[currentDay]} ${GYM_DAYS.includes(currentDay)?'🏋️ Gym Day':'🌿 Rest Day'}\nM.S. Subbulakshmi — Sri Venkateswara Suprabhatam\n06:30 — Wake up & warm lemon water`,
+      tag: 'morning-alarm', requireInteraction: true,
+    });
+  }
+  if (!isTest) morningFired6am = true;
+}
+
+function stopMorningAlarm() {
+  stopMorningMusic();
+  if (morningSnoozeTimeout) { clearTimeout(morningSnoozeTimeout); morningSnoozeTimeout = null; }
+  document.getElementById('morningOverlay').style.display = 'none';
+  document.body.style.overflow = '';
+  showToast('🙏 Jai Govinda! Have a great day!');
+}
+
+function snoozeMorning() {
+  stopMorningMusic();
+  document.getElementById('morningOverlay').style.display = 'none';
+  document.body.style.overflow = '';
+  showToast('Snoozed 5 minutes 😴');
+  morningSnoozeTimeout = setTimeout(() => triggerMorningAlarm(false), 5 * 60 * 1000);
+}
+
+// ============================================================
+// MORNING COUNTDOWN
+// ============================================================
+function updateMorningCountdown() {
+  const now = new Date();
+  const alarm = new Date();
+  alarm.setHours(6, 0, 0, 0);
+  if (now >= alarm) alarm.setDate(alarm.getDate() + 1);
+
+  const diff = alarm - now;
+  const hh = Math.floor(diff / 3600000);
+  const mm = Math.floor((diff % 3600000) / 60000);
+  const ss = Math.floor((diff % 60000) / 1000);
+
+  let label = hh > 0 ? `in ${hh}h ${mm}m` : mm > 0 ? `in ${mm}m ${ss}s` : `in ${ss}s`;
+  const el = document.getElementById('morningCountdown');
+  if (el) el.textContent = label;
+
+  // Trigger at exactly 6:00 AM
+  const h = now.getHours(), m = now.getMinutes(), s = now.getSeconds();
+  if (h === 6 && m === 0 && s < 5 && !morningFired6am) {
+    triggerMorningAlarm(false);
+  }
+  if (h === 6 && m >= 2) morningFired6am = false;
+}
+
+// ============================================================
+// 6 PM COUNTDOWN + AUTO-TRIGGER
+// ============================================================
+function updateAlarmCountdown() {
+  const now = new Date();
+  const alarm = new Date();
+  alarm.setHours(18, 0, 0, 0);
+
+  // If 6pm passed today, set for tomorrow
+  if (now >= alarm) alarm.setDate(alarm.getDate() + 1);
+
+  const diff = alarm - now;
+  const hh = Math.floor(diff / 3600000);
+  const mm = Math.floor((diff % 3600000) / 60000);
+  const ss = Math.floor((diff % 60000) / 1000);
+
+  let label = '';
+  if (hh > 0) label = `in ${hh}h ${mm}m`;
+  else if (mm > 0) label = `in ${mm}m ${ss}s`;
+  else label = `in ${ss}s`;
+
+  const el = document.getElementById('alarmCountdown');
+  if (el) el.textContent = label;
+
+  // Trigger at exactly 6:00 PM
+  const h = now.getHours(), m = now.getMinutes(), s = now.getSeconds();
+  if (h === 18 && m === 0 && s < 5 && !alarmFired6pm) {
+    triggerAlarm(false);
+  }
+  // Reset flag after 6:01 PM so it can fire again next day
+  if (h === 18 && m >= 2) alarmFired6pm = false;
+}
+
+// ============================================================
+// LIVE CLOCK
+// ============================================================
+function updateClock() {
+  const now = new Date();
+  const h = String(now.getHours()).padStart(2, '0');
+  const m = String(now.getMinutes()).padStart(2, '0');
+  document.getElementById('liveTime').textContent = `${h}:${m}`;
+}
+
+// ============================================================
+// INIT
+// ============================================================
+function init() {
+  updateClock();
+  updateAlarmCountdown();
+  updateMorningCountdown();
+  setInterval(updateClock, 5000);
+  setInterval(() => {
+    updateAlarmCountdown();
+    updateMorningCountdown();
+  }, 1000); // 1-second countdown for both alarms
+  setInterval(() => {
+    if (selectedDay === currentDay && currentView === 'schedule') renderSchedule();
+  }, 60000);
+
+  renderDayTabs();
+  renderSchedule();
+  updateNotifBanner();
+
+  if (Notification.permission === 'granted') {
+    notifGranted = true;
+    scheduleNotifications();
+  }
+
+  // Reset completions at midnight
+  const lastDate = localStorage.getItem('lastDate');
+  const today = new Date().toDateString();
+  if (lastDate !== today) {
+    localStorage.setItem('lastDate', today);
+  }
+}
+
+// init() is called by the lock screen after correct password
+// ============================================================
+// PASSWORD LOCK  — Change PAVAN_PASS to your own password
+// ============================================================
+const PAVAN_PASS = 'Pavan@2024';   // ← CHANGE THIS PASSWORD
+const SESSION_KEY = 'pavan_unlocked';
+
+function checkPassword() {
+  const input = document.getElementById('lockInput').value;
+  const err   = document.getElementById('lockError');
+
+  if (input === PAVAN_PASS) {
+    // Save unlock in sessionStorage — stays unlocked until browser closes
+    sessionStorage.setItem(SESSION_KEY, '1');
+    const lock = document.getElementById('lockScreen');
+    lock.style.transition = 'opacity 0.4s ease';
+    lock.style.opacity = '0';
+    setTimeout(() => { lock.style.display = 'none'; init(); }, 400);
+  } else {
+    const inp = document.getElementById('lockInput');
+    inp.classList.remove('shake');
+    void inp.offsetWidth; // force reflow to restart animation
+    inp.classList.add('shake');
+    inp.value = '';
+    err.textContent = '❌ Wrong password — try again';
+    setTimeout(() => { err.textContent = ''; }, 2500);
+  }
+}
+
+function toggleLockEye() {
+  const inp = document.getElementById('lockInput');
+  inp.type = inp.type === 'password' ? 'text' : 'password';
+}
+
+// Auto-unlock if already verified this session
+(function () {
+  if (sessionStorage.getItem(SESSION_KEY) === '1') {
+    document.getElementById('lockScreen').style.display = 'none';
+    // DOM is already parsed at this point (script is at end of body)
+    init();
+  }
+  // else — lock screen stays visible, init() called only after correct password
+})();
+
+
+if ('serviceWorker' in navigator) {
+  const swCode = `
+const CACHE = 'pavan-planner-v1';
+const ASSETS = [self.location.href];
+self.addEventListener('install', e => {
+  e.waitUntil(caches.open(CACHE).then(c => c.addAll(ASSETS)));
+  self.skipWaiting();
+});
+self.addEventListener('activate', e => {
+  e.waitUntil(clients.claim());
+});
+self.addEventListener('fetch', e => {
+  e.respondWith(
+    caches.match(e.request).then(r => r || fetch(e.request).catch(() => caches.match(e.request)))
+  );
+});
+  `;
+  const blob = new Blob([swCode], { type: 'application/javascript' });
+  const swUrl = URL.createObjectURL(blob);
+  navigator.serviceWorker.register(swUrl, { scope: './' })
+    .then(() => console.log('SW registered — app works offline'))
+    .catch(e => console.log('SW registration skipped:', e.message));
+}
+</script>
+</body>
+</html>
