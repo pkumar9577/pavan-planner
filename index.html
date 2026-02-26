@@ -1413,6 +1413,16 @@
       🔔 Preview Tomorrow's Prep Reminder
     </button>
 
+    <!-- Test Reminder Sounds -->
+    <div style="display:flex;gap:8px;margin:10px 20px 0;">
+      <button class="test-alarm-btn" style="flex:1;font-size:12px;padding:10px 8px;" onclick="playWarningChime();showToast('🔔 5-min warning chime!')">
+        🔔 Test 5-min Chime
+      </button>
+      <button class="test-alarm-btn" style="flex:1;font-size:12px;padding:10px 8px;" onclick="playOnTimeChime();showToast('🎵 On-time melody!')">
+        🎵 Test Task Bell
+      </button>
+    </div>
+
     <div class="timeline" id="timeline"></div>
   </div>
 
@@ -1876,19 +1886,38 @@ function scheduleNotifications() {
   notifScheduled = true;
   const schedule = buildSchedule(currentDay);
   const now = getCurrentMinutes();
+  const ICON = 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><text y=".9em" font-size="90">🌿</text></svg>';
 
   schedule.forEach(task => {
     const taskMin = timeToMinutes(task.time);
-    const msUntil = (taskMin - now) * 60 * 1000;
-    if (msUntil > 0 && msUntil < 12 * 60 * 60 * 1000) {
+
+    // ── 5-minute warning — soft xylophone chime 🔔 ───────────
+    const msWarning = (taskMin - 5 - now) * 60 * 1000;
+    if (msWarning > 0 && msWarning < 16 * 60 * 60 * 1000) {
       setTimeout(() => {
-        new Notification(`🌿 ${task.name}`, {
-          body: task.detail || 'Time for your next task!',
-          icon: 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><text y=".9em" font-size="90">🌿</text></svg>',
-          badge: 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><text y=".9em" font-size="90">🌿</text></svg>',
-          tag: task.time
+        playWarningChime();                   // 🎵 gentle 4-note cascade
+        new Notification(`⏰ In 5 mins: ${task.emoji} ${task.name}`, {
+          body: `Starting at ${formatTime12(task.time)}${task.detail ? '\n' + task.detail : ''}`,
+          icon: ICON, badge: ICON,
+          tag: 'warn_' + task.time,
+          vibrate: [100, 50, 100],
         });
-      }, msUntil);
+      }, msWarning);
+    }
+
+    // ── On-time alert — temple bell melody 🎵 ────────────────
+    const msOnTime = (taskMin - now) * 60 * 1000;
+    if (msOnTime > 0 && msOnTime < 16 * 60 * 60 * 1000) {
+      setTimeout(() => {
+        playOnTimeChime();                    // 🎵 rising pentatonic phrase
+        new Notification(`${task.emoji} ${task.name} — Time Now!`, {
+          body: task.detail || 'Your next task is starting now!',
+          icon: ICON, badge: ICON,
+          tag: 'now_' + task.time,
+          vibrate: [200, 100, 200, 100, 200],
+          requireInteraction: true,
+        });
+      }, msOnTime);
     }
   });
 }
@@ -2288,32 +2317,124 @@ function setMorningVolume(val) {
 }
 
 // ─────────────────────────────────────────────────────────────
-// Beep alarm for 6 PM prep reminder (Web Audio)
+// 🎵 MUSICAL NOTIFICATION SOUNDS — Web Audio API
 // ─────────────────────────────────────────────────────────────
-let beepInterval = null;
-let beepNodes = [];
 
-function playBeep() {
+// Helper: play one bell/chime note with natural decay
+function bellNote(ctx, freq, startT, dur, amp, type='sine') {
+  const osc  = ctx.createOscillator();
+  const osc2 = ctx.createOscillator(); // slight detune for richness
+  const g    = ctx.createGain();
+  osc.type  = type;
+  osc2.type = type;
+  osc.frequency.value  = freq;
+  osc2.frequency.value = freq * 1.003; // tiny chorus detune
+  osc.connect(g); osc2.connect(g); g.connect(ctx.destination);
+  // Bell envelope: instant attack, long natural decay
+  g.gain.setValueAtTime(0, startT);
+  g.gain.linearRampToValueAtTime(amp, startT + 0.01);
+  g.gain.exponentialRampToValueAtTime(0.001, startT + dur);
+  osc.start(startT);  osc.stop(startT + dur);
+  osc2.start(startT); osc2.stop(startT + dur);
+}
+
+// Helper: soft pad note (for harmony)
+function padNote(ctx, freq, startT, dur, amp) {
+  const osc = ctx.createOscillator();
+  const g   = ctx.createGain();
+  osc.type = 'triangle';
+  osc.frequency.value = freq;
+  osc.connect(g); g.connect(ctx.destination);
+  g.gain.setValueAtTime(0, startT);
+  g.gain.linearRampToValueAtTime(amp, startT + 0.15);
+  g.gain.setValueAtTime(amp, startT + dur - 0.2);
+  g.gain.exponentialRampToValueAtTime(0.001, startT + dur);
+  osc.start(startT); osc.stop(startT + dur);
+}
+
+// ── 🔔 5-MIN WARNING CHIME ─────────────────────────────────
+// Gentle 4-note xylophone cascade: C E G C' (major arpeggio)
+// Soft, pleasant — "hey, something is coming soon"
+function playWarningChime() {
+  if (!audioArmed) return;
   const ctx = getCtx();
   if (ctx.state === 'suspended') ctx.resume();
-  [800, 1000, 1200].forEach((freq, i) => {
-    const osc = ctx.createOscillator();
-    const g   = ctx.createGain();
-    osc.connect(g); g.connect(ctx.destination);
-    osc.type = 'sine'; osc.frequency.value = freq;
-    const t = ctx.currentTime + i * 0.25;
-    g.gain.setValueAtTime(0, t);
-    g.gain.linearRampToValueAtTime(0.55, t + 0.05);
-    g.gain.exponentialRampToValueAtTime(0.001, t + 0.22);
-    osc.start(t); osc.stop(t + 0.25);
-    beepNodes.push(osc);
+  const t = ctx.currentTime + 0.05;
+  const notes = [523.25, 659.25, 783.99, 1046.50]; // C5 E5 G5 C6
+  notes.forEach((freq, i) => {
+    bellNote(ctx, freq, t + i * 0.18, 1.4 - i * 0.1, 0.28 - i * 0.02, 'sine');
+    // Soft pad underneath first note
+    if (i === 0) padNote(ctx, freq / 2, t, 1.2, 0.06);
   });
+  // Gentle harmony on last note
+  padNote(ctx, 659.25, t + 0.54, 1.0, 0.05);
 }
-function startAlarmSound() { stopAlarmSound(); playBeep(); beepInterval = setInterval(playBeep, 1800); }
-function stopAlarmSound()  {
+
+// ── 🎵 ON-TIME TASK MELODY ────────────────────────────────
+// Beautiful 6-note temple bell phrase: Sa Pa Sa' — rises then settles
+// More prominent — "your task is starting RIGHT NOW"
+function playOnTimeChime() {
+  if (!audioArmed) return;
+  const ctx = getCtx();
+  if (ctx.state === 'suspended') ctx.resume();
+  const t = ctx.currentTime + 0.05;
+
+  // Main melody: G4 C5 E5 G5 E5 C5 — warm pentatonic phrase
+  const melody = [
+    [392.00, 0.00, 0.45, 1.6],  // G4
+    [523.25, 0.20, 0.50, 1.5],  // C5
+    [659.25, 0.38, 0.50, 1.4],  // E5
+    [783.99, 0.54, 0.55, 1.8],  // G5 — peak
+    [659.25, 0.80, 0.40, 1.2],  // E5
+    [523.25, 1.00, 0.42, 1.4],  // C5 settle
+  ];
+  melody.forEach(([freq, offset, amp, dur]) => {
+    bellNote(ctx, freq, t + offset, dur, amp * 0.38, 'sine');
+  });
+
+  // Warm bass pad underneath
+  [130.81, 196.00, 261.63].forEach((freq, i) => {
+    padNote(ctx, freq, t + i * 0.08, 2.0, 0.05);
+  });
+
+  // Sparkle overtone on the peak note
+  bellNote(ctx, 783.99 * 2, t + 0.54, 0.8, 0.08, 'sine');
+}
+
+// ── 🔕 6 PM PREP ALARM — Veena-style arpeggio ─────────────
+// Rich ascending + descending veena phrase, loops
+let beepInterval = null;
+
+function playVeenaPhrase() {
+  const ctx = getCtx();
+  if (ctx.state === 'suspended') ctx.resume();
+  const t = ctx.currentTime + 0.05;
+
+  // Veena-like tone: ascending Sa Re Ga Ma Pa, then descend
+  // D major scale (temple-friendly)
+  const up   = [293.66, 329.63, 369.99, 415.30, 493.88];  // D E F# G# B
+  const down = [493.88, 415.30, 369.99, 329.63, 293.66];
+
+  up.forEach((freq, i) => {
+    bellNote(ctx, freq, t + i * 0.16, 1.0, 0.42, 'triangle');
+    padNote(ctx, freq / 2, t + i * 0.16, 0.8, 0.06);
+  });
+  down.forEach((freq, i) => {
+    bellNote(ctx, freq, t + 0.80 + i * 0.16, 0.9, 0.35, 'triangle');
+  });
+  // Final resonant Sa
+  bellNote(ctx, 293.66, t + 1.6, 1.8, 0.48, 'sine');
+  padNote(ctx, 146.83, t + 1.6, 2.0, 0.07);
+}
+
+function startAlarmSound() {
+  stopAlarmSound();
+  playVeenaPhrase();
+  beepInterval = setInterval(playVeenaPhrase, 3200);
+}
+
+function stopAlarmSound() {
   if (beepInterval) { clearInterval(beepInterval); beepInterval = null; }
-  beepNodes.forEach(n => { try { n.stop(); } catch(e){} });
-  beepNodes = [];
 }
 
 // ============================================================
@@ -2462,7 +2583,7 @@ function init() {
 // ============================================================
 // PASSWORD LOCK  — Change PAVAN_PASS to your own password
 // ============================================================
-const PAVAN_PASS = 'Pavan@2024';   // ← CHANGE THIS PASSWORD
+const PAVAN_PASS = '2026';   // ← CHANGE THIS PASSWORD
 const SESSION_KEY = 'pavan_unlocked';
 
 function checkPassword() {
