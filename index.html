@@ -1161,7 +1161,184 @@
   }
   .btn-test-morning:active { transform: scale(0.98); background: rgba(255,200,0,0.12); }
 
-  /* ARM ALARM banner */
+  /* ============================================================
+     WHATSAPP SETUP CARD
+  ============================================================ */
+  .wa-setup-card {
+    margin: 12px 20px 0;
+    padding: 14px 16px;
+    border-radius: 16px;
+    background: linear-gradient(135deg, rgba(37,211,102,0.12), rgba(18,140,126,0.08));
+    border: 1.5px solid rgba(37,211,102,0.3);
+  }
+  .wa-setup-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 10px;
+  }
+  .wa-setup-icon { font-size: 22px; }
+  .wa-setup-title {
+    font-family: 'Syne', sans-serif;
+    font-size: 13px;
+    font-weight: 800;
+    color: #25d366;
+  }
+  .wa-setup-sub { font-size: 11px; color: rgba(100,220,160,0.7); margin-top: 1px; }
+  .wa-input-row {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+  }
+  .wa-input {
+    flex: 1;
+    padding: 10px 14px;
+    border-radius: 12px;
+    border: 1.5px solid rgba(37,211,102,0.25);
+    background: rgba(0,0,0,0.3);
+    color: var(--text);
+    font-family: 'DM Sans', sans-serif;
+    font-size: 15px;
+    outline: none;
+    transition: border-color 0.2s;
+  }
+  .wa-input:focus { border-color: #25d366; }
+  .wa-save-btn {
+    padding: 10px 16px;
+    border-radius: 12px;
+    border: none;
+    background: #25d366;
+    color: #fff;
+    font-family: 'Syne', sans-serif;
+    font-size: 13px;
+    font-weight: 800;
+    cursor: pointer;
+    transition: all 0.2s;
+    white-space: nowrap;
+  }
+  .wa-save-btn:active { transform: scale(0.96); }
+  .wa-saved-status {
+    font-size: 11px;
+    color: rgba(100,220,160,0.8);
+    margin-top: 6px;
+    min-height: 16px;
+  }
+  .wa-test-btn {
+    width: 100%;
+    margin-top: 8px;
+    padding: 9px;
+    border-radius: 11px;
+    border: 1px solid rgba(37,211,102,0.3);
+    background: transparent;
+    color: #25d366;
+    font-family: 'Syne', sans-serif;
+    font-size: 12px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  .wa-test-btn:active { background: rgba(37,211,102,0.1); }
+
+  /* ============================================================
+     WHATSAPP MESSAGE POPUP
+  ============================================================ */
+  .wa-popup-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 2000;
+    display: none;
+    align-items: flex-end;
+    justify-content: center;
+    background: rgba(0,0,0,0.6);
+    backdrop-filter: blur(4px);
+    padding: 0;
+  }
+  .wa-popup {
+    background: var(--surface);
+    border-radius: 28px 28px 0 0;
+    width: 100%;
+    max-width: 480px;
+    padding: 0 0 32px;
+    animation: waSlideUp 0.35s cubic-bezier(0.34,1.56,0.64,1);
+    box-shadow: 0 -8px 40px rgba(0,0,0,0.5);
+  }
+  @keyframes waSlideUp {
+    from { transform: translateY(100%); opacity: 0; }
+    to   { transform: translateY(0);    opacity: 1; }
+  }
+  .wa-popup-handle {
+    width: 40px; height: 4px;
+    background: rgba(255,255,255,0.2);
+    border-radius: 2px;
+    margin: 12px auto 0;
+  }
+  .wa-popup-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 16px 20px 12px;
+    border-bottom: 1px solid var(--border);
+  }
+  .wa-popup-icon { font-size: 28px; }
+  .wa-popup-title {
+    font-family: 'Syne', sans-serif;
+    font-size: 16px;
+    font-weight: 800;
+    color: #25d366;
+  }
+  .wa-popup-sub { font-size: 12px; color: var(--muted); }
+  .wa-popup-close {
+    margin-left: auto;
+    font-size: 22px;
+    cursor: pointer;
+    color: var(--muted);
+    line-height: 1;
+    padding: 4px;
+  }
+  .wa-message-preview {
+    margin: 14px 20px;
+    padding: 14px;
+    border-radius: 14px;
+    background: rgba(37,211,102,0.07);
+    border: 1px solid rgba(37,211,102,0.15);
+    font-size: 13px;
+    color: var(--text);
+    line-height: 1.7;
+    white-space: pre-wrap;
+    max-height: 240px;
+    overflow-y: auto;
+    font-family: 'DM Sans', sans-serif;
+  }
+  .wa-send-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    margin: 0 20px;
+    padding: 16px;
+    border-radius: 16px;
+    border: none;
+    background: #25d366;
+    color: #fff;
+    font-family: 'Syne', sans-serif;
+    font-size: 16px;
+    font-weight: 800;
+    cursor: pointer;
+    width: calc(100% - 40px);
+    transition: all 0.2s;
+    box-shadow: 0 4px 20px rgba(37,211,102,0.35);
+  }
+  .wa-send-btn:active { transform: scale(0.97); }
+  .wa-dismiss-btn {
+    display: block;
+    margin: 10px auto 0;
+    padding: 8px 20px;
+    background: transparent;
+    border: none;
+    color: var(--muted);
+    font-size: 13px;
+    cursor: pointer;
+  }
   .arm-banner {
     margin: 10px 20px 0;
     padding: 14px 16px;
@@ -1395,6 +1572,25 @@
       <div class="arm-arrow">›</div>
     </div>
 
+    <!-- WhatsApp Meal Prep Setup -->
+    <div class="wa-setup-card" id="waSetupCard">
+      <div class="wa-setup-header">
+        <div class="wa-setup-icon">💬</div>
+        <div>
+          <div class="wa-setup-title">WhatsApp Meal Prep Reminders</div>
+          <div class="wa-setup-sub">Auto message 1hr before each meal — tap once to send</div>
+        </div>
+      </div>
+      <div class="wa-input-row">
+        <input class="wa-input" id="waNumberInput" type="tel"
+          placeholder="91XXXXXXXXXX (with country code)"
+          maxlength="15" inputmode="numeric">
+        <button class="wa-save-btn" onclick="saveWaNumber()">Save</button>
+      </div>
+      <div class="wa-saved-status" id="waSavedStatus"></div>
+      <button class="wa-test-btn" onclick="testWaMessage()">💬 Preview Next Meal Message</button>
+    </div>
+
     <!-- Morning Alarm Chip -->
     <div class="morning-alarm-chip" id="morningAlarmChip">
       <span>🌅</span>
@@ -1438,6 +1634,26 @@
     <div class="stats-grid" id="statsGrid"></div>
     <div class="section-heading" style="margin-top:16px">WEEKLY MEALS</div>
     <div class="meal-timeline" id="weeklyMeals"></div>
+  </div>
+
+  <!-- WHATSAPP MEAL PREP POPUP -->
+  <div class="wa-popup-overlay" id="waPopupOverlay">
+    <div class="wa-popup">
+      <div class="wa-popup-handle"></div>
+      <div class="wa-popup-header">
+        <div class="wa-popup-icon">🍽️</div>
+        <div>
+          <div class="wa-popup-title" id="waPopupTitle">Meal Prep Reminder</div>
+          <div class="wa-popup-sub" id="waPopupSub">1 hour to go — start preparing!</div>
+        </div>
+        <div class="wa-popup-close" onclick="closeWaPopup()">✕</div>
+      </div>
+      <div class="wa-message-preview" id="waMessagePreview"></div>
+      <button class="wa-send-btn" id="waSendBtn" onclick="openWhatsApp()">
+        <span>💬</span> Open WhatsApp & Send
+      </button>
+      <button class="wa-dismiss-btn" onclick="closeWaPopup()">Dismiss</button>
+    </div>
   </div>
 
   <!-- BOTTOM NAV -->
@@ -2087,7 +2303,192 @@ function dismissAlarm() {
 }
 
 // ============================================================
-// AUDIO ENGINE — ARM + Web Audio API + <audio> element
+// WHATSAPP MEAL PREP REMINDER SYSTEM
+// Fires 1 hour before Breakfast, Lunch & Dinner
+// Opens WhatsApp with message pre-typed — user taps Send once
+// ============================================================
+
+// Meal times (minutes from midnight) → 1hr before
+const WA_MEAL_SCHEDULE = [
+  { meal: 'Breakfast', mealTime: '08:30', reminderTime: '07:30', emoji: '🥣' },
+  { meal: 'Lunch',     mealTime: '12:00', reminderTime: '11:00', emoji: '🍱' },
+  { meal: 'Dinner',    mealTime: '19:00', reminderTime: '18:00', emoji: '🍛' },
+];
+
+let waNumber = localStorage.getItem('waNumber') || '';
+let waPendingMessage = '';
+let waPendingTitle = '';
+let waScheduled = false;
+
+// ── Prep instructions per meal per day ──────────────────────
+const MEAL_PREP_STEPS = {
+  breakfast: {
+    0: ['✅ Ferment idly batter if not done', '✅ Chop onion & tomato for sambar', '✅ Boil toor dal for sambar', '✅ Keep idly plates ready & greased'],
+    1: ['✅ Boil water for oats', '✅ Chop onion, tomato, capsicum', '✅ Keep masala powder, salt ready', '✅ Soak almonds & walnuts if not done'],
+    2: ['✅ Boil 4 eggs', '✅ Keep brown bread slices ready', '✅ Separate yolks, keep only whites', '✅ Slice tomato for side'],
+    3: ['✅ Grind oats dosa batter (if not soaked)', '✅ Heat tawa / non-stick pan', '✅ Chop onion, green chilli, coriander', '✅ Keep sambar or chutney ready'],
+    4: ['✅ Wash & soak poha in water for 5 mins', '✅ Chop onion, green chilli', '✅ Keep mustard seeds, curry leaves ready', '✅ Dry roast peanuts if needed'],
+    5: ['✅ Check sabudhana is fully soaked (soft)', '✅ Boil/dice potato into small cubes', '✅ Keep cumin seeds & green chilli ready', '✅ Keep roasted peanuts ready'],
+    6: ['✅ Rinse rice & moong dal', '✅ Chop carrot, beans (optional)', '✅ Keep ghee, cumin, ginger ready', '✅ Set pressure cooker / vessel'],
+  },
+  lunch: {
+    0: ['✅ Knead chapati dough', '✅ Chop mixed veg for curry', '✅ Boil dal for curry base', '✅ Keep spices & oil ready'],
+    1: ['✅ Boil brown rice (30 min cook)', '✅ Start tomato dal on low flame', '✅ Boil chickpeas for salad', '✅ Whisk curd, keep salad veggies ready'],
+    2: ['✅ Boil brown rice (30 min cook)', '✅ Start rasam on low flame', '✅ Keep moong sprouts ready for salad', '✅ Whisk curd, chop tomato & onion'],
+    3: ['✅ Knead chapati dough', '✅ Blanch spinach for palak dal', '✅ Cook toor dal in pressure cooker', '✅ Chop tomato, onion for dal'],
+    4: ['✅ Knead chapati dough', '✅ Boiled chickpeas ready? (soaked overnight)', '✅ Cook chickpea dal with tomato', '✅ Chop cucumber, tomato for salad'],
+    5: ['✅ Boil brown rice (30 min cook)', '✅ Start rasam on low flame with tamarind', '✅ Keep moong sprouts & salad veggies ready', '✅ Whisk curd'],
+    6: ['✅ Knead chapati dough', '✅ Cook dal with tomato & spices', '✅ Boil green lentils for salad', '✅ Chop spinach, tomato, onion'],
+  },
+  dinner: {
+    0: ['✅ Knead chapati dough (fresh)', '✅ Reheat veg curry from lunch or make fresh', '✅ Warm the sabzi', '✅ Keep salad aside if any'],
+    1: ['✅ Boil brown rice or use leftover', '✅ Simmer tomato dal on low flame', '✅ Taste & adjust salt/spice', '✅ Prepare hot phulka chapatis'],
+    2: ['✅ Boil brown rice or use leftover', '✅ Reheat or make fresh rasam', '✅ Add curry leaves & ghee tadka to rasam', '✅ Keep papad ready as side'],
+    3: ['✅ Knead chapati dough', '✅ Reheat palak dal or make fresh batch', '✅ Roll & cook chapatis', '✅ Add ghee on top of dal'],
+    4: ['✅ Knead chapati dough', '✅ Reheat chickpea dal', '✅ Adjust consistency with water', '✅ Roll & cook chapatis'],
+    5: ['✅ Boil brown rice or use leftover', '✅ Reheat rasam with extra tamarind if needed', '✅ Crispy papad as side', '✅ Add tadka: mustard + curry leaves'],
+    6: ['✅ Knead chapati dough', '✅ Simmer dal, adjust salt & spice', '✅ Roll & cook chapatis fresh', '✅ Keep pickle or papad as side'],
+  }
+};
+
+// ── Build WhatsApp message text ──────────────────────────────
+function buildWaMessage(mealType, day) {
+  const dayName   = DAYS_FULL[day];
+  const mealNames = { breakfast: BREAKFASTS[day], lunch: LUNCHES[day], dinner: DINNERS[day] };
+  const mealEmoji = { breakfast: '🥣', lunch: '🍱', dinner: '🍛' };
+  const mealTime  = { breakfast: '8:30 AM', lunch: '12:00 PM', dinner: '7:00 PM' };
+  const steps     = MEAL_PREP_STEPS[mealType][day] || ['✅ Start meal preparation'];
+
+  const header = `🌿 *Pavan's Meal Prep Reminder*\n━━━━━━━━━━━━━━━━━━`;
+  const mealLine = `${mealEmoji[mealType]} *${mealType.charAt(0).toUpperCase()+mealType.slice(1)}* — ${mealNames[mealType]}`;
+  const timeLine = `🕐 Ready by: *${mealTime[mealType]}*  |  📅 ${dayName}`;
+  const prepHeader = `\n📋 *Preparation Steps:*`;
+  const prepSteps = steps.join('\n');
+  const footer = `\n━━━━━━━━━━━━━━━━━━\n_Start now — 1 hour to go!_ 💪`;
+
+  return `${header}\n${mealLine}\n${timeLine}\n${prepHeader}\n${prepSteps}${footer}`;
+}
+
+// ── Show WhatsApp popup ──────────────────────────────────────
+function showWaPopup(mealType, day, isTest = false) {
+  const msg       = buildWaMessage(mealType, day);
+  const mealNames = { breakfast: BREAKFASTS[day], lunch: LUNCHES[day], dinner: DINNERS[day] };
+  const mealEmoji = { breakfast: '🥣', lunch: '🍱', dinner: '🍛' };
+
+  waPendingMessage = msg;
+  waPendingTitle   = `${mealEmoji[mealType]} ${mealType.charAt(0).toUpperCase()+mealType.slice(1)} Prep`;
+
+  document.getElementById('waPopupTitle').textContent  = waPendingTitle;
+  document.getElementById('waPopupSub').textContent    = isTest ? 'Preview — your message will look like this' : '1 hour to go — tap Send!';
+  document.getElementById('waMessagePreview').textContent = msg;
+  document.getElementById('waPopupOverlay').style.display = 'flex';
+  document.body.style.overflow = 'hidden';
+
+  // Play a gentle chime
+  if (audioArmed) playWarningChime();
+}
+
+function closeWaPopup() {
+  document.getElementById('waPopupOverlay').style.display = 'none';
+  document.body.style.overflow = '';
+}
+
+function openWhatsApp() {
+  const num = waNumber.replace(/\D/g, '');
+  const encoded = encodeURIComponent(waPendingMessage);
+  const url = num
+    ? `https://wa.me/${num}?text=${encoded}`        // Send to saved number
+    : `https://wa.me/?text=${encoded}`;              // Pick contact in WhatsApp
+  window.open(url, '_blank');
+  closeWaPopup();
+  showToast('💬 WhatsApp opened — tap Send!');
+}
+
+// ── Save WhatsApp number ─────────────────────────────────────
+function saveWaNumber() {
+  const input = document.getElementById('waNumberInput').value.trim().replace(/\D/g, '');
+  const status = document.getElementById('waSavedStatus');
+
+  if (input.length < 10) {
+    status.style.color = '#e76f51';
+    status.textContent = '❌ Enter a valid number with country code (e.g. 919876543210)';
+    return;
+  }
+  waNumber = input;
+  localStorage.setItem('waNumber', waNumber);
+  status.style.color = 'rgba(100,220,160,0.9)';
+  status.textContent = `✅ Saved! Reminders will go to +${waNumber}`;
+  scheduleWaReminders();
+  showToast('💬 WhatsApp number saved!');
+}
+
+// ── Test: show next upcoming meal preview ────────────────────
+function testWaMessage() {
+  const now   = getCurrentMinutes();
+  const day   = currentDay;
+  const meals = [
+    { type: 'breakfast', trigMin: 7*60+30 },
+    { type: 'lunch',     trigMin: 11*60    },
+    { type: 'dinner',    trigMin: 18*60    },
+  ];
+  // Find next upcoming meal
+  const next = meals.find(m => m.trigMin > now) || meals[0];
+  showWaPopup(next.type, day, true);
+}
+
+// ── Schedule WhatsApp reminders for today ────────────────────
+function scheduleWaReminders() {
+  if (waScheduled) return;
+  waScheduled = true;
+
+  const now = getCurrentMinutes();
+  const day = currentDay;
+
+  WA_MEAL_SCHEDULE.forEach(({ meal, mealTime, reminderTime, emoji }) => {
+    const [rh, rm]  = reminderTime.split(':').map(Number);
+    const trigMin   = rh * 60 + rm;
+    const msUntil   = (trigMin - now) * 60 * 1000;
+    const mealType  = meal.toLowerCase();
+
+    if (msUntil > 0 && msUntil < 24 * 60 * 60 * 1000) {
+      setTimeout(() => {
+        // Show in-app popup
+        showWaPopup(mealType, currentDay);
+
+        // Also push a system notification
+        if (Notification.permission === 'granted') {
+          const ICON = 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><text y=".9em" font-size="90">🌿</text></svg>';
+          new Notification(`${emoji} ${meal} Prep — 1 hour!`, {
+            body: `Tap to open WhatsApp prep message for ${meal.toLowerCase()}`,
+            icon: ICON, badge: ICON,
+            tag: 'wa_' + mealType,
+            vibrate: [200, 100, 200],
+            requireInteraction: true,
+          });
+        }
+      }, msUntil);
+    }
+  });
+}
+
+// ── Load saved number on startup ─────────────────────────────
+function initWhatsApp() {
+  const saved = localStorage.getItem('waNumber');
+  if (saved) {
+    waNumber = saved;
+    const inp = document.getElementById('waNumberInput');
+    if (inp) inp.value = saved;
+    const status = document.getElementById('waSavedStatus');
+    if (status) {
+      status.style.color = 'rgba(100,220,160,0.9)';
+      status.textContent = `✅ Active — reminders go to +${saved}`;
+    }
+    scheduleWaReminders();
+  }
+}
+
+// ============================================================
+// ARM ALARMS
 // Android blocks audio from timers unless AudioContext was
 // unlocked by a real user tap first. The ARM button does this.
 // ============================================================
@@ -2147,6 +2548,25 @@ function armAlarms() {
   tryNextUrl();
 
   audioArmed = true;
+
+  // 3) Silent heartbeat every 20 seconds — prevents Android from
+  //    suspending the AudioContext while the app is in the background.
+  //    Uses withAudio() so it also auto-resumes if it does get suspended.
+  setInterval(() => {
+    if (!audioArmed) return;
+    const c = getCtx();
+    if (c.state === 'suspended') {
+      c.resume().catch(() => {});
+    } else {
+      // Tiny inaudible click to keep context alive
+      const o = c.createOscillator();
+      const g = c.createGain();
+      g.gain.value = 0.00001;
+      o.connect(g); g.connect(c.destination);
+      o.start(c.currentTime);
+      o.stop(c.currentTime + 0.001);
+    }
+  }, 20000);
 
   // Update banner
   const banner = document.getElementById('armBanner');
@@ -2267,12 +2687,14 @@ function startSynth() {
   stopSynth();
   synthPlaying = true;
   const ctx = getCtx();
-  ctx.resume();
-  masterGain = ctx.createGain();
-  masterGain.gain.setValueAtTime(0, ctx.currentTime);
-  masterGain.gain.linearRampToValueAtTime(morningVolume / 100, ctx.currentTime + 2.5);
-  masterGain.connect(ctx.destination);
-  scheduleLoop(ctx, masterGain, ctx.currentTime);
+  ctx.resume().then(() => {
+    if (!synthPlaying) return; // was stopped before resume finished
+    masterGain = ctx.createGain();
+    masterGain.gain.setValueAtTime(0, ctx.currentTime);
+    masterGain.gain.linearRampToValueAtTime(morningVolume / 100, ctx.currentTime + 2.5);
+    masterGain.connect(ctx.destination);
+    scheduleLoop(ctx, masterGain, ctx.currentTime + 0.1);
+  }).catch(() => {});
 }
 
 function stopSynth() {
@@ -2355,76 +2777,76 @@ function padNote(ctx, freq, startT, dur, amp) {
 // ── 🔔 5-MIN WARNING CHIME ─────────────────────────────────
 // Gentle 4-note xylophone cascade: C E G C' (major arpeggio)
 // Soft, pleasant — "hey, something is coming soon"
+// ── Core: resume AudioContext then run a callback ────────────
+// This is the KEY fix — ctx.resume() is async. If we schedule
+// notes before it resolves, currentTime is stale and notes
+// get placed in the past and never play.
+function withAudio(fn) {
+  const ctx = getCtx();
+  if (ctx.state === 'running') {
+    fn(ctx);
+  } else {
+    ctx.resume().then(() => {
+      // Small buffer so currentTime advances after resume
+      setTimeout(() => fn(ctx), 50);
+    }).catch(() => {});
+  }
+}
+
 function playWarningChime() {
   if (!audioArmed) return;
-  const ctx = getCtx();
-  if (ctx.state === 'suspended') ctx.resume();
-  const t = ctx.currentTime + 0.05;
-  const notes = [523.25, 659.25, 783.99, 1046.50]; // C5 E5 G5 C6
-  notes.forEach((freq, i) => {
-    bellNote(ctx, freq, t + i * 0.18, 1.4 - i * 0.1, 0.28 - i * 0.02, 'sine');
-    // Soft pad underneath first note
-    if (i === 0) padNote(ctx, freq / 2, t, 1.2, 0.06);
+  withAudio(ctx => {
+    const t = ctx.currentTime + 0.08;
+    const notes = [523.25, 659.25, 783.99, 1046.50]; // C5 E5 G5 C6
+    notes.forEach((freq, i) => {
+      bellNote(ctx, freq, t + i * 0.18, 1.4 - i * 0.1, 0.28 - i * 0.02, 'sine');
+      if (i === 0) padNote(ctx, freq / 2, t, 1.2, 0.06);
+    });
+    padNote(ctx, 659.25, t + 0.54, 1.0, 0.05);
   });
-  // Gentle harmony on last note
-  padNote(ctx, 659.25, t + 0.54, 1.0, 0.05);
 }
 
 // ── 🎵 ON-TIME TASK MELODY ────────────────────────────────
-// Beautiful 6-note temple bell phrase: Sa Pa Sa' — rises then settles
-// More prominent — "your task is starting RIGHT NOW"
 function playOnTimeChime() {
   if (!audioArmed) return;
-  const ctx = getCtx();
-  if (ctx.state === 'suspended') ctx.resume();
-  const t = ctx.currentTime + 0.05;
-
-  // Main melody: G4 C5 E5 G5 E5 C5 — warm pentatonic phrase
-  const melody = [
-    [392.00, 0.00, 0.45, 1.6],  // G4
-    [523.25, 0.20, 0.50, 1.5],  // C5
-    [659.25, 0.38, 0.50, 1.4],  // E5
-    [783.99, 0.54, 0.55, 1.8],  // G5 — peak
-    [659.25, 0.80, 0.40, 1.2],  // E5
-    [523.25, 1.00, 0.42, 1.4],  // C5 settle
-  ];
-  melody.forEach(([freq, offset, amp, dur]) => {
-    bellNote(ctx, freq, t + offset, dur, amp * 0.38, 'sine');
+  withAudio(ctx => {
+    const t = ctx.currentTime + 0.08;
+    const melody = [
+      [392.00, 0.00, 0.45, 1.6],
+      [523.25, 0.20, 0.50, 1.5],
+      [659.25, 0.38, 0.50, 1.4],
+      [783.99, 0.54, 0.55, 1.8],
+      [659.25, 0.80, 0.40, 1.2],
+      [523.25, 1.00, 0.42, 1.4],
+    ];
+    melody.forEach(([freq, offset, amp, dur]) => {
+      bellNote(ctx, freq, t + offset, dur, amp * 0.38, 'sine');
+    });
+    [130.81, 196.00, 261.63].forEach((freq, i) => {
+      padNote(ctx, freq, t + i * 0.08, 2.0, 0.05);
+    });
+    bellNote(ctx, 783.99 * 2, t + 0.54, 0.8, 0.08, 'sine');
   });
-
-  // Warm bass pad underneath
-  [130.81, 196.00, 261.63].forEach((freq, i) => {
-    padNote(ctx, freq, t + i * 0.08, 2.0, 0.05);
-  });
-
-  // Sparkle overtone on the peak note
-  bellNote(ctx, 783.99 * 2, t + 0.54, 0.8, 0.08, 'sine');
 }
 
 // ── 🔕 6 PM PREP ALARM — Veena-style arpeggio ─────────────
-// Rich ascending + descending veena phrase, loops
 let beepInterval = null;
 
 function playVeenaPhrase() {
-  const ctx = getCtx();
-  if (ctx.state === 'suspended') ctx.resume();
-  const t = ctx.currentTime + 0.05;
-
-  // Veena-like tone: ascending Sa Re Ga Ma Pa, then descend
-  // D major scale (temple-friendly)
-  const up   = [293.66, 329.63, 369.99, 415.30, 493.88];  // D E F# G# B
-  const down = [493.88, 415.30, 369.99, 329.63, 293.66];
-
-  up.forEach((freq, i) => {
-    bellNote(ctx, freq, t + i * 0.16, 1.0, 0.42, 'triangle');
-    padNote(ctx, freq / 2, t + i * 0.16, 0.8, 0.06);
+  withAudio(ctx => {
+    const t = ctx.currentTime + 0.08;
+    const up   = [293.66, 329.63, 369.99, 415.30, 493.88];
+    const down = [493.88, 415.30, 369.99, 329.63, 293.66];
+    up.forEach((freq, i) => {
+      bellNote(ctx, freq, t + i * 0.16, 1.0, 0.42, 'triangle');
+      padNote(ctx, freq / 2, t + i * 0.16, 0.8, 0.06);
+    });
+    down.forEach((freq, i) => {
+      bellNote(ctx, freq, t + 0.80 + i * 0.16, 0.9, 0.35, 'triangle');
+    });
+    bellNote(ctx, 293.66, t + 1.6, 1.8, 0.48, 'sine');
+    padNote(ctx, 146.83, t + 1.6, 2.0, 0.07);
   });
-  down.forEach((freq, i) => {
-    bellNote(ctx, freq, t + 0.80 + i * 0.16, 0.9, 0.35, 'triangle');
-  });
-  // Final resonant Sa
-  bellNote(ctx, 293.66, t + 1.6, 1.8, 0.48, 'sine');
-  padNote(ctx, 146.83, t + 1.6, 2.0, 0.07);
 }
 
 function startAlarmSound() {
@@ -2577,6 +2999,9 @@ function init() {
   if (lastDate !== today) {
     localStorage.setItem('lastDate', today);
   }
+
+  // WhatsApp reminders
+  initWhatsApp();
 }
 
 // init() is called by the lock screen after correct password
@@ -2624,29 +3049,36 @@ function toggleLockEye() {
 })();
 
 
-if ('serviceWorker' in navigator) {
-  const swCode = `
-const CACHE = 'pavan-planner-v1';
-const ASSETS = [self.location.href];
-self.addEventListener('install', e => {
-  e.waitUntil(caches.open(CACHE).then(c => c.addAll(ASSETS)));
-  self.skipWaiting();
-});
-self.addEventListener('activate', e => {
-  e.waitUntil(clients.claim());
-});
-self.addEventListener('fetch', e => {
-  e.respondWith(
-    caches.match(e.request).then(r => r || fetch(e.request).catch(() => caches.match(e.request)))
-  );
-});
-  `;
-  const blob = new Blob([swCode], { type: 'application/javascript' });
-  const swUrl = URL.createObjectURL(blob);
-  navigator.serviceWorker.register(swUrl, { scope: './' })
-    .then(() => console.log('SW registered — app works offline'))
-    .catch(e => console.log('SW registration skipped:', e.message));
+
+// Service Worker — use data: URI (works when served over http/https)
+// Silently skipped when opening as a local file (blob: not allowed by Chrome)
+if ('serviceWorker' in navigator && location.protocol !== 'blob:') {
+  const swCode = [
+    "const CACHE='pavan-planner-v3';",
+    "self.addEventListener('install',e=>{self.skipWaiting();});",
+    "self.addEventListener('activate',e=>{",
+    "  e.waitUntil(caches.keys().then(ks=>Promise.all(ks.filter(k=>k!==CACHE).map(k=>caches.delete(k)))));",
+    "  clients.claim();",
+    "});",
+    "self.addEventListener('fetch',e=>{",
+    "  e.respondWith(caches.match(e.request).then(r=>r||fetch(e.request).then(res=>{",
+    "    if(res&&res.status===200){const c=res.clone();caches.open(CACHE).then(ca=>ca.put(e.request,c));}",
+    "    return res;",
+    "  }).catch(()=>caches.match(e.request))));",
+    "});"
+  ].join('\n');
+
+  try {
+    // Try data: URI first (works on GitHub Pages / Cloudflare Pages)
+    const swUrl = 'data:application/javascript;charset=utf-8,' + encodeURIComponent(swCode);
+    navigator.serviceWorker.register(swUrl, { scope: './' })
+      .then(() => console.log('SW registered — offline ready ✅'))
+      .catch(() => console.log('SW skipped (local file mode) — app still works fully'));
+  } catch(e) {
+    console.log('SW not available — app still works fully');
+  }
 }
+
 </script>
 </body>
 </html>
